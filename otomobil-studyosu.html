@@ -193,7 +193,7 @@
   <div style="font-weight:900;letter-spacing:.1em">ALMAN OTOMOTİV STÜDYOSU</div>
   <div id="load-bar-w"><div id="load-bar"></div></div>
   <div id="load-txt">Sahne hazırlanıyor…</div>
-  <div id="build-tag" style="font-size:.68rem;color:#5b6376;letter-spacing:.2em;font-weight:700">BUILD v11 • 9f463f8 SONRASI</div>
+  <div id="build-tag" style="font-size:.68rem;color:#5b6376;letter-spacing:.2em;font-weight:700">BUILD v12 • 9f463f8 SONRASI</div>
 </div>
 <div id="fatal" class="glass"><div><h2>WebGL başlatılamadı</h2><p>Bu tahtanın tarayıcısı WebGL desteklemiyor. Lütfen Chrome / Edge ile açın.</p></div></div>
 
@@ -1076,6 +1076,13 @@ function loadSlide(i, first){
         currentCar = obj;
         transitionT = 0;
         setStatus(true);
+        var mb = "";
+        try{
+          var __tris = 0;
+          obj.traverse(function(m){ if(m.isMesh && m.geometry){ var ix = m.geometry.index; __tris += Math.round(((ix?ix.count:m.geometry.attributes.position.count))/3); } });
+          mb = " • " + (__tris/1e6).toFixed(1) + "M üçgen";
+        }catch(_e){}
+        toast("GERÇEK MODEL yüklendi: " + data.brand + mb, 2600);
       }catch(e){
         showFallback(data, "Model işlemede hata — konsept maket gösteriliyor.");
       }
