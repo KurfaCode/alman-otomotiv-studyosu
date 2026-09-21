@@ -392,10 +392,10 @@ function makeWallPanelTexture(){
   var c = document.createElement("canvas"); c.width = 512; c.height = 256;
   var x = c.getContext("2d");
   var g = x.createLinearGradient(0,0,0,256);
-  g.addColorStop(0,"#141922"); g.addColorStop(0.55,"#0d1119"); g.addColorStop(1,"#080b12");
+  g.addColorStop(0,"#0a0d14"); g.addColorStop(0.55,"#070a11"); g.addColorStop(1,"#04060a");
   x.fillStyle = g; x.fillRect(0,0,512,256);
   /* panel derzleri: dikey ince çizgiler */
-  x.fillStyle = "rgba(255,255,255,0.05)";
+  x.fillStyle = "rgba(255,255,255,0.04)";
   [102,204,307,409].forEach(function(px){ x.fillRect(px,0,2,256); });
   x.fillStyle = "rgba(0,0,0,0.5)";
   [104,206,309,411].forEach(function(px){ x.fillRect(px,0,1,256); });
@@ -410,22 +410,22 @@ function makeWallPanelTexture(){
 function drawWallNames(activeIdx, accentCss){
   var names = ["OZAN","EGE","OSMAN","BİRHAT","BİLAL","MEHMET"];
   var c = STAGE.wallCanvas, x = c.getContext("2d");
-  x.clearRect(0,0,1024,128);
+  x.clearRect(0,0,2048,160);
   x.textAlign = "center"; x.textBaseline = "middle";
-  var step = 1024/6;
+  try{ x.letterSpacing = "3px"; }catch(e){}
+  var step = 2048/6;
   names.forEach(function(n,i){
     var cx = step*i + step/2;
     var on = (i===activeIdx);
-    x.font = (on?"700 ":"300 ")+"52px 'Segoe UI', Arial, sans-serif";
-    x.fillStyle = on ? accentCss : "rgba(205,213,228,0.62)";
-    try{ x.letterSpacing = "6px"; }catch(e){}
-    x.fillText(n.split("").join("  "), cx, 56);
+    x.font = (on?"700 ":"300 ")+"40px 'Segoe UI', Arial, sans-serif";
+    x.fillStyle = on ? accentCss : "rgba(205,213,228,0.6)";
+    x.fillText(n, cx, 66);
     if(on){
       x.fillStyle = accentCss;
-      x.fillRect(cx-52, 96, 104, 4);
+      x.fillRect(cx-40, 112, 80, 4);
     }else{
       x.fillStyle = "rgba(255,255,255,0.10)";
-      x.fillRect(cx-52, 96, 104, 2);
+      x.fillRect(cx-40, 112, 80, 2);
     }
   });
   STAGE.wallTex.needsUpdate = true;
@@ -465,7 +465,7 @@ function buildShowroom(){
   /* --- zemin: koyu, yarı parlak (reflector YOK, pahalı) --- */
   var floor = new THREE.Mesh(
     new THREE.CircleGeometry(22, 48),
-    new THREE.MeshStandardMaterial({color:0x0a0e15, metalness:0.15, roughness:0.7})
+    new THREE.MeshStandardMaterial({color:0x070a11, metalness:0.15, roughness:0.7})
   );
   floor.rotation.x = -Math.PI/2; floor.position.y = -0.02;
   scene.add(floor);
@@ -548,24 +548,24 @@ function buildShowroom(){
   /* --- arka duvar: panel dokulu tek quad (1 draw call) --- */
   var wall = new THREE.Mesh(
     new THREE.PlaneGeometry(26, 7),
-    new THREE.MeshBasicMaterial({map:makeWallPanelTexture()})
+    new THREE.MeshBasicMaterial({map:makeWallPanelTexture(), fog:false})
   );
   wall.position.set(0, 3.4, -9);
   scene.add(wall);
   /* duvar süpürgeliği LED şeridi (fotoğraftaki yatay çizgi) */
   var base = new THREE.Mesh(
     new THREE.BoxGeometry(22, 0.045, 0.045),
-    new THREE.MeshBasicMaterial({color:0xdfe7f5})
+    new THREE.MeshBasicMaterial({color:0x8f99ae, fog:false})
   );
   base.position.set(0, 0.55, -8.75);
   scene.add(base);
   /* isimlik */
   STAGE.wallCanvas = document.createElement("canvas");
-  STAGE.wallCanvas.width = 1024; STAGE.wallCanvas.height = 128;
+  STAGE.wallCanvas.width = 2048; STAGE.wallCanvas.height = 160;
   STAGE.wallTex = new THREE.CanvasTexture(STAGE.wallCanvas);
   var namePlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(9, 1.125),
-    new THREE.MeshBasicMaterial({map:STAGE.wallTex, transparent:true, depthWrite:false})
+    new THREE.PlaneGeometry(11.5, 0.9),
+    new THREE.MeshBasicMaterial({map:STAGE.wallTex, transparent:true, depthWrite:false, fog:false})
   );
   namePlane.position.set(0, 4.4, -8.72);
   scene.add(namePlane);
@@ -576,7 +576,7 @@ function buildShowroom(){
   STAGE.wmTex = new THREE.CanvasTexture(STAGE.wmCanvas);
   var wmPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(13, 2.54),
-    new THREE.MeshBasicMaterial({map:STAGE.wmTex, transparent:true, depthWrite:false})
+    new THREE.MeshBasicMaterial({map:STAGE.wmTex, transparent:true, depthWrite:false, fog:false})
   );
   wmPlane.position.set(0, 2.0, -8.7);
   scene.add(wmPlane);
@@ -593,14 +593,14 @@ function buildShowroom(){
     scene.add(bar);
     var halo = new THREE.Mesh(
       new THREE.PlaneGeometry(1.1, 5.6),
-      new THREE.MeshBasicMaterial({map:glowTex, transparent:true, opacity:0.5, depthWrite:false, blending:THREE.AdditiveBlending})
+      new THREE.MeshBasicMaterial({map:glowTex, transparent:true, opacity:0.3, depthWrite:false, blending:THREE.AdditiveBlending, fog:false})
     );
     halo.position.set(bx, 3.0, -7.7);
     scene.add(halo);
     /* zemindeki sahte yansıma çizgisi (fotoğraftaki parke yansıması) */
     var streak = new THREE.Mesh(
       new THREE.PlaneGeometry(0.5, 6),
-      new THREE.MeshBasicMaterial({map:makeStreakTexture(), transparent:true, opacity:0.35, depthWrite:false})
+      new THREE.MeshBasicMaterial({map:makeStreakTexture(), transparent:true, opacity:0.2, depthWrite:false})
     );
     streak.rotation.x = -Math.PI/2;
     streak.position.set(bx*0.92, 0.005, -3.5);
@@ -639,16 +639,17 @@ function buildEnvironment(){
   try{
     var c = document.createElement("canvas"); c.width = 128; c.height = 64;
     var x = c.getContext("2d");
-    x.fillStyle = "#05070c"; x.fillRect(0,0,128,64);
-    /* tavan şeridi */
-    var g = x.createLinearGradient(0,0,0,30);
-    g.addColorStop(0,"#e8ecf4"); g.addColorStop(1,"#05070c");
-    x.fillStyle = g; x.fillRect(0,0,128,26);
-    /* yan softbox'lar */
-    x.fillStyle = "rgba(220,228,242,0.85)"; x.fillRect(8,20,10,24);
-    x.fillStyle = "rgba(220,228,242,0.7)"; x.fillRect(110,20,10,24);
-    /* ön dolgu */
-    x.fillStyle = "rgba(160,170,190,0.35)"; x.fillRect(48,22,32,12);
+    x.fillStyle = "#04060a"; x.fillRect(0,0,128,64);
+    /* tavan şeridi: geniş ve parlak — siyah boya bunu yansıtır */
+    var g = x.createLinearGradient(0,0,0,36);
+    g.addColorStop(0,"#f2f5fa"); g.addColorStop(1,"#04060a");
+    x.fillStyle = g; x.fillRect(0,0,128,34);
+    /* yan softbox'lar: büyük dikey kartlar */
+    x.fillStyle = "rgba(235,240,250,0.95)"; x.fillRect(6,18,16,30);
+    x.fillStyle = "rgba(235,240,250,0.9)"; x.fillRect(106,18,16,30);
+    /* ön dolgu + arka vurgu */
+    x.fillStyle = "rgba(180,190,210,0.5)"; x.fillRect(46,24,36,14);
+    x.fillStyle = "rgba(140,150,175,0.3)"; x.fillRect(0,30,128,6);
     var tex = new THREE.CanvasTexture(c);
     tex.mapping = THREE.EquirectangularReflectionMapping;
     var pm = new THREE.PMREMGenerator(renderer);
@@ -859,7 +860,7 @@ function init(){
   dirLight = new THREE.DirectionalLight(0xfff1dd, 0.8);
   dirLight.position.set(-4, 6.5, 5.5);
   scene.add(dirLight);
-  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.7, 30);
+  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.35, 30);
   rimLight.position.set(-4, 3.2, -6);
   scene.add(rimLight);
   buildEnvironment();
@@ -873,6 +874,13 @@ function init(){
 
   /* REFERANS FOTOĞRAF SHOWROOM'U — tek çağrıda tüm mimari */
   buildShowroom();
+  /* sahne dekorunun environment cevabını kıs (araba parlak, dekor tok) */
+  scene.traverse(function(o){
+    if(o.isMesh && o.material){
+      var mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(function(m){ if("envMapIntensity" in m) m.envMapIntensity = 0.35; });
+    }
+  });
 
   /* kontroller — dokunmatik orbit */
   controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -917,18 +925,28 @@ function setStatus(real){
 }
 
 function normalizeModel(obj){
-  /* GLB içi ıvır zıvır (zemin diski, ışık bloğu) bbox'ı şişirir → EN BÜYÜK TEK mesh'i baz al */
-  var hero = null, heroBox = null, heroVol = 0;
-  var tmpB = new THREE.Box3(), tmpS = new THREE.Vector3();
-  obj.updateMatrixWorld(true);
+  /* modelin kendi zemin diski (asphalt/ground): arabadan geniş + inceyse gizle — podyumu örtüyordu */
   obj.traverse(function(o){
     if(!o.isMesh || !o.geometry) return;
+    var b = new THREE.Box3().setFromObject(o);
+    if(b.isEmpty()) return;
+    var s = new THREE.Vector3(); b.getSize(s);
+    var nm = ((o.name||"")+" "+((o.material&&o.material.name)||"")).toLowerCase();
+    if((s.x>6||s.z>6) || /asphalt|ground/.test(nm)){ o.visible = false; }
+  });
+  obj.updateMatrixWorld(true);
+  /* gizlemeden SONRA kahramanı seç: EN BÜYÜK görünür mesh */
+  var hero = null, heroBox = null, heroVol = 0;
+  var tmpB = new THREE.Box3(), tmpS = new THREE.Vector3();
+  obj.traverse(function(o){
+    if(!o.isMesh || !o.geometry || o.visible === false) return;
     tmpB.setFromObject(o);
     if(tmpB.isEmpty()) return;
     tmpB.getSize(tmpS);
     var v = tmpS.x*tmpS.y*tmpS.z;
     if(v > heroVol){ heroVol = v; hero = o; heroBox = tmpB.clone(); }
   });
+  obj.updateMatrixWorld(true);
   var ref = heroBox || new THREE.Box3().setFromObject(obj);
   var size = new THREE.Vector3(); ref.getSize(size);
   var center = new THREE.Vector3(); ref.getCenter(center);
@@ -938,24 +956,67 @@ function normalizeModel(obj){
   s = Math.min(Math.max(s, 0.05), 10);
   obj.scale.setScalar(s);
   obj.updateMatrixWorld(true);
-  /* kahraman parçayı merkeze al, grubu tabana oturt */
-  var b2 = new THREE.Box3().setFromObject(obj);
+  /* kahraman parçayı merkeze al, grubu tabana oturt (gizli diskler hesaba katılmaz) */
+  function visibleBox(){
+    var bb = new THREE.Box3();
+    obj.traverse(function(m){
+      if(!m.isMesh || m.visible === false || !m.geometry) return;
+      var t = new THREE.Box3().setFromObject(m);
+      if(!t.isEmpty()) bb.union(t);
+    });
+    return bb;
+  }
+  var b2 = visibleBox();
   var cx = (b2.min.x+b2.max.x)/2, cz = (b2.min.z+b2.max.z)/2;
   obj.position.x -= cx; obj.position.z -= cz;
-  var b3 = new THREE.Box3().setFromObject(obj);
+  obj.updateMatrixWorld(true);
+  var b3 = visibleBox();
   obj.position.y -= b3.min.y;
   obj.traverse(function(o){
     if(o.isMesh){
       o.castShadow = false; o.receiveShadow = false;
-      if(o.material){
-        var mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach(function(m){
-          /* environment parlaması kontrollü: boya canlı, camlar patlamasın */
-          if("envMapIntensity" in m && m.envMapIntensity === 1) m.envMapIntensity = 0.65;
-          m.needsUpdate = false;
-        });
-      }
     }
+  });
+  enhanceCarMaterials(obj);
+}
+
+/* Gerçek GLB araba makyajı: camları cama çevir, siyah boyaya clearcoat + stüdyo yansıması ver.
+   Arabanın rengini/formunu DEĞİŞTİRMEZ — sadece malzeme cevabını düzeltir. */
+function enhanceCarMaterials(obj){
+  var done = {};
+  obj.traverse(function(o){
+    if(!o.isMesh || !o.material) return;
+    var mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach(function(m){
+      if(done[m.uuid]) return; done[m.uuid] = 1;
+      var nm = (m.name||"").toLowerCase();
+      try{
+        if(/glass/.test(nm) && !/screen|gauge|boot|symbol|head/.test(nm)){
+          /* gerçek cam: koyu tint, yarı saydam, keskin yansıma */
+          m.transparent = true; m.opacity = 0.5;
+          m.color = new THREE.Color(0x11161e);
+          m.metalness = 0.1; m.roughness = 0.08;
+          m.envMapIntensity = 1.3; m.depthWrite = false;
+        }else if(/paint|color1|color2/.test(nm)){
+          /* siyah boya: clearcoat cilan + güçlü softbox yansıması */
+          m.envMapIntensity = 1.15;
+          if(m.roughness !== undefined) m.roughness = Math.min(Math.max(m.roughness, 0.03), 0.25);
+          if(window.THREE && THREE.MeshPhysicalMaterial && m.isMeshStandardMaterial){
+            var pc = new THREE.MeshPhysicalMaterial();
+            pc.copy(m);
+            pc.clearcoat = 1.0; pc.clearcoatRoughness = 0.06;
+            pc.envMapIntensity = 1.15;
+            o.material = Array.isArray(o.material) ? o.material.map(function(x){ return x===m?pc:x; }) : pc;
+            done[pc.uuid] = 1;
+          }
+        }else if(/chrome|metallic|lettering|badge|mirror/.test(nm)){
+          m.envMapIntensity = 1.2;
+        }else{
+          if("envMapIntensity" in m && m.envMapIntensity === 1) m.envMapIntensity = 0.55;
+        }
+        m.needsUpdate = true;
+      }catch(e){}
+    });
   });
 }
 
