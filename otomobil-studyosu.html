@@ -474,6 +474,13 @@ function buildShowroom(){
   /* --- podyum: siyah parlak silindir (fotoğraftaki gibi) --- */
   podiumGroup = new THREE.Group();
   scene.add(podiumGroup);
+  /* alt basamak bileziği (2. fotodaki katmanlı podyum dili) */
+  var step = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.95, 4.05, 0.12, 64),
+    new THREE.MeshStandardMaterial({color:0x090c12, metalness:0.3, roughness:0.55})
+  );
+  step.position.y = 0.04;
+  podiumGroup.add(step);
   var podium = new THREE.Mesh(
     new THREE.CylinderGeometry(3.4, 3.55, 0.34, 64),
     new THREE.MeshStandardMaterial({color:0x0b0e15, metalness:0.4, roughness:0.42})
@@ -825,11 +832,11 @@ function init(){
   scene.background = new THREE.Color(0x04060b);
   scene.fog = new THREE.Fog(0x04060b, 15, 34);
 
-  camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.set(4.6, 1.7, 5.9);
+  camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(5.2, 2.4, 6.4);
 
   /* SADECE 3 HAFİF IŞIK + 1 kez üretilen stüdyo environment'ı (duvar/barlar gerçek ışık kullanmaz) */
-  scene.add(new THREE.AmbientLight(0x8f99ae, 0.45));
+  scene.add(new THREE.AmbientLight(0x8f99ae, 0.55));
   dirLight = new THREE.DirectionalLight(0xfff1dd, 0.8);
   dirLight.position.set(-4, 6.5, 5.5);
   scene.add(dirLight);
@@ -857,10 +864,12 @@ function init(){
 
   /* kontroller — dokunmatik orbit */
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.8, 0);
+  controls.target.set(0, 0.75, 0);
   controls.enableDamping = false;      // eski CPU için damping kapalı
   controls.enablePan = false;
-  controls.minDistance = 3.5; controls.maxDistance = 11;
+  controls.minDistance = 4.5; controls.maxDistance = 12;
+  /* kiosk kilidi: tekerlek-zoom kapalı (scroll podyumu durdurup limiti seğirtiyordu) */
+  controls.enableZoom = false;
   controls.minPolarAngle = Math.PI*0.16; controls.maxPolarAngle = Math.PI*0.495;
   /* duvarın arkasına geçmeyi yasakla (yazı ters okunuyordu) */
   controls.minAzimuthAngle = -1.15; controls.maxAzimuthAngle = 1.15;
