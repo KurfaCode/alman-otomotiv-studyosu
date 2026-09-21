@@ -394,11 +394,11 @@ function makeWallPanelTexture(){
   var g = x.createLinearGradient(0,0,0,256);
   g.addColorStop(0,"#0a0d14"); g.addColorStop(0.55,"#070a11"); g.addColorStop(1,"#04060a");
   x.fillStyle = g; x.fillRect(0,0,512,256);
-  /* panel derzleri: dikey ince çizgiler */
+  /* panel derzleri: 3 adet, seyrek ve silik */
   x.fillStyle = "rgba(255,255,255,0.04)";
-  [102,204,307,409].forEach(function(px){ x.fillRect(px,0,2,256); });
+  [150,300].forEach(function(px){ x.fillRect(px,0,2,256); });
   x.fillStyle = "rgba(0,0,0,0.5)";
-  [104,206,309,411].forEach(function(px){ x.fillRect(px,0,1,256); });
+  [152,302].forEach(function(px){ x.fillRect(px,0,1,256); });
   /* üstten süzülen hafif spot gradyanı */
   var s = x.createRadialGradient(256,0,10,256,0,260);
   s.addColorStop(0,"rgba(255,255,255,0.10)"); s.addColorStop(1,"rgba(255,255,255,0)");
@@ -469,13 +469,7 @@ function buildShowroom(){
   );
   floor.rotation.x = -Math.PI/2; floor.position.y = -0.02;
   scene.add(floor);
-  /* sahte stüdyo parlaması: podyum altında büyük yumuşak ışık havuzu */
-  var sheen = new THREE.Mesh(
-    new THREE.PlaneGeometry(16,16),
-    new THREE.MeshBasicMaterial({map:makeFloorSheenTexture(), transparent:true, depthWrite:false})
-  );
-  sheen.rotation.x = -Math.PI/2; sheen.position.y = -0.005;
-  scene.add(sheen);
+  /* zemin sheen düzlemi KALDIRILDI (denetim: sarı göl yapıyordu) */
 
   /* --- podyum: siyah parlak silindir (fotoğraftaki gibi) --- */
   podiumGroup = new THREE.Group();
@@ -495,7 +489,7 @@ function buildShowroom(){
 
   /* HALKA 1 (beyaz, podyum üstü — fotoğraftaki ince beyaz çizgi) */
   var innerRing = new THREE.Mesh(
-    new THREE.TorusGeometry(2.95, 0.018, 8, 96),
+    new THREE.TorusGeometry(3.15, 0.018, 8, 96),
     new THREE.MeshBasicMaterial({color:0xf4f6ff, depthWrite:false})
   );
   innerRing.rotation.x = Math.PI/2; innerRing.position.y = 0.345;
@@ -552,13 +546,7 @@ function buildShowroom(){
   );
   wall.position.set(0, 3.4, -9);
   scene.add(wall);
-  /* duvar süpürgeliği LED şeridi (fotoğraftaki yatay çizgi) */
-  var base = new THREE.Mesh(
-    new THREE.BoxGeometry(22, 0.045, 0.045),
-    new THREE.MeshBasicMaterial({color:0x8f99ae, fog:false})
-  );
-  base.position.set(0, 0.55, -8.75);
-  scene.add(base);
+  /* süpürgelik LED'i KALDIRILDI (denetim: duvarda hata çizgisi gibi okunuyordu) */
   /* isimlik */
   STAGE.wallCanvas = document.createElement("canvas");
   STAGE.wallCanvas.width = 2048; STAGE.wallCanvas.height = 160;
@@ -593,7 +581,7 @@ function buildShowroom(){
     scene.add(bar);
     var halo = new THREE.Mesh(
       new THREE.PlaneGeometry(1.1, 5.6),
-      new THREE.MeshBasicMaterial({map:glowTex, transparent:true, opacity:0.3, depthWrite:false, blending:THREE.AdditiveBlending, fog:false})
+      new THREE.MeshBasicMaterial({map:glowTex, transparent:true, opacity:0.22, depthWrite:false, blending:THREE.AdditiveBlending, fog:false})
     );
     halo.position.set(bx, 3.0, -7.7);
     scene.add(halo);
@@ -614,23 +602,8 @@ function buildShowroom(){
     scene.add(col);
   });
 
-  /* --- saksı + bodur ağaç (düşük poli: kutu + silindir + 1 ikosahedron) --- */
-  var potMat = new THREE.MeshStandardMaterial({color:0x141a26, metalness:0.2, roughness:0.8});
-  var trunkMat = new THREE.MeshStandardMaterial({color:0x3a2d20, roughness:0.9});
-  var leafMat = new THREE.MeshStandardMaterial({color:0x1c2b1f, roughness:1.0});
-  [[-6.4,-6.6],[6.4,-6.6],[-9.4,-5.2],[9.4,-5.2]].forEach(function(p){
-    var pot = new THREE.Mesh(new THREE.BoxGeometry(1.7,0.72,0.9), potMat);
-    pot.position.set(p[0], 0.36, p[1]); scene.add(pot);
-    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.08,0.9,6), trunkMat);
-    trunk.position.set(p[0], 1.1, p[1]); scene.add(trunk);
-    var leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62,0), leafMat);
-    leaf.position.set(p[0], 1.85, p[1]); leaf.scale.y = 1.25; scene.add(leaf);
-    var leaf2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4,0), leafMat);
-    leaf2.position.set(p[0]+0.3, 1.5, p[1]+0.15); scene.add(leaf2);
-    /* saksı içi mini uplight: yine gerçek ışık değil, küçük basic küre */
-    var up = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshBasicMaterial({color:0xffe9bd}));
-    up.position.set(p[0], 0.78, p[1]); scene.add(up);
-  });
+  /* --- saksı/ağaç BLOĞU KALDIRILDI (denetim: brokoli görünümü, gereksiz kalabalık.
+     Sütun + ışık barı mimariyi tek başına taşıyor; tahta GPU'su da nefes alıyor) --- */
 }
 
 /* Stüdyo environment'ı: metalik boyanın yansıtacağı 2 yumuşak softbox + zemin.
@@ -853,14 +826,14 @@ function init(){
   scene.fog = new THREE.Fog(0x04060b, 15, 34);
 
   camera = new THREE.PerspectiveCamera(42, window.innerWidth/window.innerHeight, 0.1, 100);
-  camera.position.set(5.0, 2.1, 6.3);
+  camera.position.set(4.6, 1.7, 5.9);
 
   /* SADECE 3 HAFİF IŞIK + 1 kez üretilen stüdyo environment'ı (duvar/barlar gerçek ışık kullanmaz) */
   scene.add(new THREE.AmbientLight(0x8f99ae, 0.45));
   dirLight = new THREE.DirectionalLight(0xfff1dd, 0.8);
   dirLight.position.set(-4, 6.5, 5.5);
   scene.add(dirLight);
-  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.35, 30);
+  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.3, 30);
   rimLight.position.set(-4, 3.2, -6);
   scene.add(rimLight);
   buildEnvironment();
@@ -884,10 +857,10 @@ function init(){
 
   /* kontroller — dokunmatik orbit */
   controls = new THREE.OrbitControls(camera, renderer.domElement);
-  controls.target.set(0, 0.85, 0);
+  controls.target.set(0, 0.8, 0);
   controls.enableDamping = false;      // eski CPU için damping kapalı
   controls.enablePan = false;
-  controls.minDistance = 4; controls.maxDistance = 13;
+  controls.minDistance = 3.5; controls.maxDistance = 11;
   controls.minPolarAngle = Math.PI*0.16; controls.maxPolarAngle = Math.PI*0.495;
   /* duvarın arkasına geçmeyi yasakla (yazı ters okunuyordu) */
   controls.minAzimuthAngle = -1.15; controls.maxAzimuthAngle = 1.15;
@@ -1009,7 +982,7 @@ function enhanceCarMaterials(obj){
             o.material = Array.isArray(o.material) ? o.material.map(function(x){ return x===m?pc:x; }) : pc;
             done[pc.uuid] = 1;
           }
-        }else if(/chrome|metallic|lettering|badge|mirror/.test(nm)){
+        }else if(/chrome|metallic|lettering|badge|mirror|rim|steel|brake|disk/.test(nm)){
           m.envMapIntensity = 1.2;
         }else{
           if("envMapIntensity" in m && m.envMapIntensity === 1) m.envMapIntensity = 0.55;
