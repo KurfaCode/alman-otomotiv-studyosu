@@ -7,97 +7,109 @@
 <style>
   :root{
     --accent:#d4af37;
-    --accent-soft:rgba(212,175,55,.16);
-    --bg0:#0b0f17;
-    --bg1:#151d2a;
-    --card:rgba(13,18,30,.74);
-    --line:rgba(255,255,255,.11);
-    --txt:#eef2f8;
-    --mut:#9aa6bd;
+    --accent-soft:rgba(212,175,55,.14);
+    --bg0:#04060b;
+    --bg1:#090d16;
+    --card:rgba(8,11,18,.82);
+    --line:rgba(255,255,255,.09);
+    --txt:#f2f4f9;
+    --mut:#8b94a9;
+    --gold-hi:#f3dfa0;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{
     margin:0;overflow:hidden;color:var(--txt);
-    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
-    background:radial-gradient(120% 90% at 50% 22%, #1c2740 0%, var(--bg1) 34%, var(--bg0) 62%, #06090f 100%);
+    font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:#04060b;
     user-select:none;-webkit-user-select:none;
+    -webkit-font-smoothing:antialiased;
   }
   #scene-container{position:fixed;inset:0;z-index:0}
   #scene-container canvas{display:block;touch-action:none}
 
-  /* vignette + studio glow */
+  /* sinematik vinyet + tepeden süzülen spot ışığı hissi */
   #vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
-    background:radial-gradient(90% 70% at 50% 42%, transparent 55%, rgba(0,0,0,.5) 100%);}
-  #accent-glow{position:fixed;left:50%;top:62%;width:64vmin;height:22vmin;z-index:1;pointer-events:none;
-    transform:translate(-50%,-50%);filter:blur(70px);opacity:.28;background:var(--accent);border-radius:50%;
+    background:
+      radial-gradient(46% 34% at 50% 30%, rgba(255,250,235,.06) 0%, transparent 70%),
+      radial-gradient(100% 82% at 50% 46%, transparent 52%, rgba(0,0,0,.62) 100%);}
+  #accent-glow{position:fixed;left:50%;top:64%;width:56vmin;height:16vmin;z-index:1;pointer-events:none;
+    transform:translate(-50%,-50%);filter:blur(80px);opacity:.16;background:var(--accent);border-radius:50%;
     transition:background .5s ease}
 
-  .glass{background:var(--card);border:1px solid var(--line);border-radius:18px;
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-    box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06)}
+  .glass{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    box-shadow:0 24px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05)}
 
-  /* ---- left info card ---- */
+  /* ---- sol bilgi kartı: ince, premium, dergi kapağı hiyerarşisi ---- */
   #info-card{position:fixed;z-index:5;left:22px;top:50%;transform:translateY(-50%);
-    width:min(440px,92vw);max-height:calc(100vh - 150px);overflow:auto;padding:0 0 16px;
+    width:min(400px,92vw);max-height:calc(100vh - 150px);overflow:auto;padding:0 0 14px;
     transition:opacity .18s ease, transform .18s ease, border-color .4s ease}
   #info-card.switching{opacity:0;transform:translateY(-50%) translateX(-16px)}
-  #info-card::-webkit-scrollbar{width:6px}
-  #info-card::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
-  .flag{display:flex;height:5px;border-radius:18px 18px 0 0;overflow:hidden}
+  #info-card::-webkit-scrollbar{width:5px}
+  #info-card::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:4px}
+  .flag{display:flex;height:4px;border-radius:16px 16px 0 0;overflow:hidden;opacity:.9}
   .flag span{flex:1}
   .flag span:nth-child(1){background:#000}
   .flag span:nth-child(2){background:#dd0000}
   .flag span:nth-child(3){background:#ffce00}
-  .card-body{padding:16px 20px 4px}
-  #speaker-badge{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;letter-spacing:.12em;
-    padding:7px 12px;border-radius:999px;border:1px solid var(--line);
-    background:var(--accent-soft);color:#fff}
-  #speaker-badge .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
-  #model-status{display:inline-flex;margin-left:8px;font-size:.68rem;font-weight:800;letter-spacing:.08em;
+  .card-body{padding:15px 20px 4px}
+  #speaker-badge{display:inline-flex;align-items:center;gap:7px;font-size:.7rem;font-weight:700;letter-spacing:.18em;
+    padding:6px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+    background:rgba(255,255,255,.04);color:#cfd6e4}
+  #speaker-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  #model-status{display:inline-flex;margin-left:7px;font-size:.62rem;font-weight:700;letter-spacing:.14em;
     padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut);vertical-align:middle}
-  #model-status.real{color:#7CFFB2;border-color:rgba(124,255,178,.4);background:rgba(124,255,178,.08)}
-  #model-status.mock{color:#ffd27c;border-color:rgba(255,210,124,.4);background:rgba(255,210,124,.08)}
-  #brand{margin:12px 0 2px;font-size:2.15rem;line-height:1.02;font-weight:900;letter-spacing:.01em}
-  #brand-underline{height:3px;width:86px;border-radius:3px;background:var(--accent);box-shadow:0 0 14px var(--accent);margin:8px 0 10px}
-  #model-name{font-size:.95rem;color:var(--mut);font-weight:700;letter-spacing:.04em}
-  #slogan-de{margin:10px 0 2px;font-style:italic;font-size:1.12rem;font-weight:600}
-  #slogan-tr{color:var(--mut);font-size:.95rem;margin-bottom:12px}
-  #bullets{margin:8px 0 4px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
-  #bullets li{display:flex;gap:10px;align-items:flex-start;font-size:1.02rem;line-height:1.45;
-    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:10px 12px}
-  #bullets li b.tick{flex:0 0 22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;
-    background:var(--accent);color:#0b0f17;font-size:.85rem;font-weight:900}
-  #stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0 4px}
-  .stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;
-    padding:10px 8px;text-align:center}
-  .stat .v{font-weight:900;font-size:.98rem;color:#fff}
-  .stat .l{font-size:.7rem;color:var(--mut);margin-top:4px;letter-spacing:.05em;font-weight:700}
+  #model-status.real{color:#7CFFB2;border-color:rgba(124,255,178,.35);background:rgba(124,255,178,.07)}
+  #model-status.mock{color:#ffd27c;border-color:rgba(255,210,124,.35);background:rgba(255,210,124,.07)}
+  #brand{margin:13px 0 0;font-size:1.9rem;line-height:1.05;font-weight:800;letter-spacing:.06em}
+  #brand-underline{height:2px;width:64px;border-radius:2px;
+    background:linear-gradient(90deg,var(--accent),transparent);margin:9px 0 9px}
+  #model-name{font-size:.78rem;color:var(--mut);font-weight:600;letter-spacing:.22em;text-transform:uppercase}
+  #slogan-de{margin:12px 0 3px;font-family:Georgia,"Times New Roman",serif;font-style:italic;
+    font-size:1.18rem;font-weight:400;color:var(--gold-hi)}
+  #slogan-tr{color:var(--mut);font-size:.85rem;margin-bottom:12px;letter-spacing:.02em}
+  #bullets{margin:8px 0 4px;padding:0 0 0 2px;list-style:none;display:flex;flex-direction:column;gap:0}
+  #bullets li{display:flex;gap:11px;align-items:flex-start;font-size:.93rem;line-height:1.5;
+    padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.06)}
+  #bullets li:last-child{border-bottom:none}
+  #bullets li b.tick{flex:0 0 auto;margin-top:2px;width:8px;height:8px;border-radius:50%;
+    background:var(--accent);box-shadow:0 0 8px var(--accent);font-size:0;color:transparent}
+  #bullets li span b{color:#fff}
+  #stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0 4px}
+  .stat{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:11px;
+    padding:9px 6px;text-align:center}
+  .stat .v{font-weight:800;font-size:.92rem;color:#fff;letter-spacing:.02em}
+  .stat .l{font-size:.62rem;color:var(--mut);margin-top:4px;letter-spacing:.14em;font-weight:700}
 
-  /* ---- dictionary ---- */
-  #dict{position:fixed;z-index:5;right:18px;top:16px;width:min(300px,80vw);padding:13px 15px;font-size:.86rem}
-  #dict h4{margin:0 0 8px;font-size:.78rem;letter-spacing:.14em;color:#fff;display:flex;align-items:center;gap:8px}
-  #dict h4 button{margin-left:auto;background:none;border:none;color:var(--mut);font-size:1rem;cursor:pointer}
-  #dict dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 10px}
-  #dict dt{font-weight:800;color:var(--accent)}
-  #dict dd{margin:0;color:#d6deeb}
+  /* ---- sözlük: ince satırlar, sessiz tipografi ---- */
+  #dict{position:fixed;z-index:5;right:18px;top:16px;width:min(288px,80vw);padding:12px 15px 13px;font-size:.8rem}
+  #dict h4{margin:0 0 9px;font-size:.68rem;letter-spacing:.22em;color:#cfd6e4;display:flex;align-items:center;gap:8px;font-weight:700}
+  #dict h4::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  #dict h4 button{margin-left:auto;background:none;border:none;color:var(--mut);font-size:.95rem;cursor:pointer}
+  #dict dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:baseline}
+  #dict dt{font-weight:700;color:#fff;font-size:.78rem;white-space:nowrap}
+  #dict dd{margin:0;color:var(--mut);font-size:.78rem;text-align:right}
   #dict-toggle{position:fixed;z-index:5;right:18px;top:16px;display:none}
 
-  /* ---- bottom panel ---- */
+  /* ---- alt panel: hap form, sessiz butonlar ---- */
   #panel{position:fixed;z-index:6;left:50%;bottom:16px;transform:translateX(-50%);
-    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;max-width:96vw;flex-wrap:wrap;justify-content:center}
-  .btn{min-height:52px;min-width:58px;padding:0 18px;border-radius:13px;border:1px solid rgba(255,255,255,.16);
-    background:rgba(255,255,255,.08);color:#fff;font-size:1.02rem;font-weight:800;cursor:pointer;
-    display:inline-flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+    display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;max-width:96vw;flex-wrap:wrap;justify-content:center}
+  .btn{min-height:48px;min-width:52px;padding:0 17px;border-radius:999px;border:1px solid rgba(255,255,255,.13);
+    background:rgba(255,255,255,.06);color:#fff;font-size:.92rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;touch-action:manipulation;
+    transition:background .15s,transform .1s}
+  .btn:hover{background:rgba(255,255,255,.11)}
   .btn:active{transform:scale(.96)}
-  .btn.primary{background:var(--accent);border-color:transparent;color:#0b0f17;box-shadow:0 6px 22px rgba(0,0,0,.4)}
-  .btn.small{min-height:52px;font-size:.9rem;padding:0 13px}
-  #counter{font-weight:800;font-size:.92rem;letter-spacing:.03em;padding:0 8px;white-space:nowrap}
-  #counter small{display:block;font-size:.68rem;color:var(--mut);font-weight:700;text-align:center}
+  .btn.primary{background:var(--accent);border-color:transparent;color:#14100a;box-shadow:0 4px 18px rgba(0,0,0,.5)}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.small{min-height:48px;font-size:.82rem;padding:0 14px;color:#cfd6e4}
+  #counter{font-weight:800;font-size:.88rem;letter-spacing:.06em;padding:0 10px;white-space:nowrap;text-align:center}
+  #counter small{display:block;font-size:.62rem;color:var(--mut);font-weight:600;letter-spacing:.14em;margin-top:2px}
   #dots{display:flex;gap:7px;align-items:center;padding:0 4px}
-  #dots button{width:15px;height:15px;border-radius:50%;border:1px solid rgba(255,255,255,.35);
-    background:rgba(255,255,255,.14);cursor:pointer;padding:0;min-width:0}
-  #dots button.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent);transform:scale(1.2)}
+  #dots button{width:9px;height:9px;border-radius:50%;border:none;
+    background:rgba(255,255,255,.22);cursor:pointer;padding:0;min-width:0;transition:all .2s}
+  #dots button.on{background:var(--accent);box-shadow:0 0 8px var(--accent);transform:scale(1.25)}
 
   #fps{position:fixed;z-index:6;right:14px;bottom:14px;font-size:.7rem;color:var(--mut);
     background:rgba(0,0,0,.4);padding:5px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.08)}
@@ -107,7 +119,7 @@
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
   #loader{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;
-    background:radial-gradient(100% 100% at 50% 30%, #141d30 0%, #0b0f17 60%);transition:opacity .35s ease}
+    background:radial-gradient(100% 100% at 50% 28%, #0a0f1a 0%, #04060b 62%);transition:opacity .35s ease}
   #loader.hide{opacity:0;pointer-events:none}
   .spin{width:52px;height:52px;border-radius:50%;border:4px solid rgba(255,255,255,.14);border-top-color:var(--accent);animation:sp 0.9s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
@@ -153,7 +165,7 @@
 
 <!-- SÖZLÜK -->
 <aside id="dict" class="glass">
-  <h4>📘 OTOMOTİV ALMANCASI <button id="dict-close" title="Kapat">✕</button></h4>
+  <h4>OTOMOTİV ALMANCASI <button id="dict-close" title="Kapat">✕</button></h4>
   <dl>
     <dt>Pferdestärke (PS)</dt><dd>Beygir Gücü</dd>
     <dt>Allradantrieb</dt><dd>4×4 Çekiş</dd>
@@ -161,7 +173,7 @@
     <dt>Höchstgeschwindigkeit</dt><dd>Maksimum Hız</dd>
   </dl>
 </aside>
-<button id="dict-toggle" class="btn small glass">📘 Sözlük</button>
+<button id="dict-toggle" class="btn small glass">Sözlük</button>
 
 <!-- ALT PANEL -->
 <nav id="panel" class="glass">
@@ -348,7 +360,21 @@ function makePlateTexture(text){
    arkada panel derzli karanlık duvar, iki dikey ışık barı, saksılı minik ağaçlar, duvarda isimlik.
    Hepsi MeshBasic/Standard + CanvasTexture. Gölge yok, yansıma yok (sahte parlama var),
    gerçek ışık yok (emissive görünümlü basic malzeme). Toplam ~30 draw call, düşük GPU. */
-var STAGE = { wallCanvas:null, wallTex:null, floorRingAccent:null };
+var STAGE = { wallCanvas:null, wallTex:null, floorRingAccent:null, wmCanvas:null, wmTex:null };
+
+/* Arkadaki dev marka filigranı (2. fotoğraftaki MERCEDES-BENZ hayaleti): kontur harfler, silik */
+function drawWatermark(brand){
+  var c = STAGE.wmCanvas; if(!c) return;
+  var x = c.getContext("2d");
+  x.clearRect(0,0,1024,200);
+  x.textAlign = "center"; x.textBaseline = "middle";
+  x.font = "300 92px 'Segoe UI', Arial, sans-serif";
+  try{ x.letterSpacing = "14px"; }catch(e){}
+  x.strokeStyle = "rgba(255,255,255,0.13)";
+  x.lineWidth = 1.5;
+  x.strokeText(brand, 512, 100);
+  STAGE.wmTex.needsUpdate = true;
+}
 
 function makeWallPanelTexture(){
   var c = document.createElement("canvas"); c.width = 512; c.height = 256;
@@ -406,8 +432,8 @@ function makeFloorSheenTexture(){
   var c = document.createElement("canvas"); c.width = 256; c.height = 256;
   var x = c.getContext("2d");
   var g = x.createRadialGradient(128,128,8,128,128,128);
-  g.addColorStop(0,"rgba(150,175,220,0.20)");
-  g.addColorStop(0.5,"rgba(150,175,220,0.06)");
+  g.addColorStop(0,"rgba(150,175,220,0.09)");
+  g.addColorStop(0.5,"rgba(150,175,220,0.03)");
   g.addColorStop(1,"rgba(150,175,220,0)");
   x.fillStyle = g; x.fillRect(0,0,256,256);
   return new THREE.CanvasTexture(c);
@@ -458,24 +484,42 @@ function buildShowroom(){
   /* HALKA 1 (beyaz, podyum üstü — fotoğraftaki ince beyaz çizgi) */
   var innerRing = new THREE.Mesh(
     new THREE.TorusGeometry(2.95, 0.018, 8, 96),
-    new THREE.MeshBasicMaterial({color:0xf4f6ff})
+    new THREE.MeshBasicMaterial({color:0xf4f6ff, depthWrite:false})
   );
-  innerRing.rotation.x = Math.PI/2; innerRing.position.y = 0.325;
+  innerRing.rotation.x = Math.PI/2; innerRing.position.y = 0.345;
+  innerRing.renderOrder = 5;
   podiumGroup.add(innerRing);
   /* HALKA 2 (marka rengi, podyum yan çeperi — slaytla renk değiştirir) */
   neonRing = new THREE.Mesh(
     new THREE.TorusGeometry(3.5, 0.022, 8, 96),
-    new THREE.MeshBasicMaterial({color:PRESENTATION_DATA[0].accentHex})
+    new THREE.MeshBasicMaterial({color:PRESENTATION_DATA[0].accentHex, depthWrite:false})
   );
-  neonRing.rotation.x = Math.PI/2; neonRing.position.y = 0.1;
+  neonRing.rotation.x = Math.PI/2; neonRing.position.y = 0.12;
+  neonRing.renderOrder = 5;
   podiumGroup.add(neonRing);
   /* HALKA 3 (zeminde büyük beyaz çember — fotoğraftaki dış halka) */
   STAGE.floorRingAccent = new THREE.Mesh(
     new THREE.RingGeometry(4.35, 4.41, 96),
-    new THREE.MeshBasicMaterial({color:0xe8ecf5, transparent:true, opacity:0.8, side:THREE.DoubleSide})
+    new THREE.MeshBasicMaterial({color:0xe8ecf5, transparent:true, opacity:0.7, side:THREE.DoubleSide, depthWrite:false})
   );
-  STAGE.floorRingAccent.rotation.x = -Math.PI/2; STAGE.floorRingAccent.position.y = 0.0;
+  STAGE.floorRingAccent.rotation.x = -Math.PI/2; STAGE.floorRingAccent.position.y = 0.012;
+  STAGE.floorRingAccent.renderOrder = 4;
   scene.add(STAGE.floorRingAccent);
+
+  /* SAHTE SPOT KONİSİ — tepeden süzülen hacimsel ışık hissi (1 draw call, additive) */
+  var coneTexC = document.createElement("canvas"); coneTexC.width = 16; coneTexC.height = 128;
+  var coneX = coneTexC.getContext("2d");
+  var coneG = coneX.createLinearGradient(0,0,0,128);
+  coneG.addColorStop(0,"rgba(255,244,220,0.55)"); coneG.addColorStop(1,"rgba(255,244,220,0)");
+  coneX.fillStyle = coneG; coneX.fillRect(0,0,16,128);
+  var coneTex = new THREE.CanvasTexture(coneTexC);
+  var cone = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.1, 3.6, 7.5, 32, 1, true),
+    new THREE.MeshBasicMaterial({map:coneTex, transparent:true, opacity:0.10,
+      blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide})
+  );
+  cone.position.set(0, 4.1, 0); cone.renderOrder = 6;
+  scene.add(cone);
 
   /* SAHTE TEMAS GÖLGESİ */
   var shadowPlane = new THREE.Mesh(
@@ -514,6 +558,17 @@ function buildShowroom(){
   namePlane.position.set(0, 4.4, -8.72);
   scene.add(namePlane);
   drawWallNames(0, PRESENTATION_DATA[0].accent);
+  /* marka filigranı: arabanın arkasında duvarda duran dev kontur yazı */
+  STAGE.wmCanvas = document.createElement("canvas");
+  STAGE.wmCanvas.width = 1024; STAGE.wmCanvas.height = 200;
+  STAGE.wmTex = new THREE.CanvasTexture(STAGE.wmCanvas);
+  var wmPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(13, 2.54),
+    new THREE.MeshBasicMaterial({map:STAGE.wmTex, transparent:true, depthWrite:false})
+  );
+  wmPlane.position.set(0, 2.0, -8.7);
+  scene.add(wmPlane);
+  drawWatermark(PRESENTATION_DATA[0].brand);
 
   /* --- dikey ışık barları (gerçek ışık DEĞİL: basic malzeme, 0 GPU yük) --- */
   var glowTex = makeBarGlowTexture();
@@ -579,7 +634,7 @@ function buildConceptCar(accentHex, id){
   if(id==="bmw"){ L=4.45; cabinLen=1.65; cabinH=0.55; }
   if(id==="mercedes"){ L=4.7; cabinLen=1.9; cabinH=0.58; long=true; }
 
-  var bodyMat  = new THREE.MeshStandardMaterial({color:0x171e2c, metalness:0.72, roughness:0.34});
+  var bodyMat  = new THREE.MeshStandardMaterial({color:0x2a3448, metalness:0.65, roughness:0.38});
   var bodyMat2 = null;
   if(id==="maybach"){
     bodyMat = new THREE.MeshStandardMaterial({color:0x2b1420, metalness:0.7, roughness:0.36});
@@ -625,11 +680,14 @@ function buildConceptCar(accentHex, id){
   cs.lineTo(cx+cl-0.45, cy1);
   cs.quadraticCurveTo(cx+cl-0.05, cy1-0.08, cx+cl, cy0);
   cs.lineTo(cx-cl, cy0);
-  var cabGeo = new THREE.ExtrudeGeometry(cs, {depth:1.5, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.05, bevelSegments:1});
-  cabGeo.translate(0, 0, -0.75);
+  var cabGeo = new THREE.ExtrudeGeometry(cs, {depth:1.42, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.05, bevelSegments:1});
+  cabGeo.translate(0, 0, -0.71);
   var cabin = new THREE.Mesh(cabGeo, glassMat);
   cabin.position.y = 0.12;
   g.add(cabin);
+  /* tavan barı: gövde rengi ince panel, cam kutu hissini kırar */
+  var roof = new THREE.Mesh(new THREE.BoxGeometry(cabinLen*0.52, 0.05, 1.1), bodyMat);
+  roof.position.set(cx+0.05, topY + cabinH + 0.13, 0); g.add(roof);
 
   /* neon yan çizgi */
   var strip = new THREE.Mesh(new THREE.BoxGeometry(L*0.86, 0.035, W+0.1), trimMat);
@@ -699,7 +757,7 @@ function buildConceptCar(accentHex, id){
 
   /* far hüzmesi hissi: ince accent alt parlaması */
   var glow = new THREE.Mesh(new THREE.PlaneGeometry(L*0.95, 0.9),
-    new THREE.MeshBasicMaterial({color:accentHex, transparent:true, opacity:0.1, depthWrite:false}));
+    new THREE.MeshBasicMaterial({color:accentHex, transparent:true, opacity:0.05, depthWrite:false}));
   glow.rotation.x = -Math.PI/2; glow.position.y = 0.03;
   g.add(glow);
 
@@ -752,20 +810,27 @@ function init(){
   container.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0b0f17);
-  scene.fog = new THREE.Fog(0x0b0f17, 14, 34);
+  scene.background = new THREE.Color(0x04060b);
+  scene.fog = new THREE.Fog(0x04060b, 15, 34);
 
   camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
   camera.position.set(5.4, 2.5, 6.9);
 
   /* SADECE 3 HAFİF IŞIK (duvar/barlar/ağaçlar gerçek ışık kullanmaz) */
-  scene.add(new THREE.AmbientLight(0x9aa3b8, 0.8));
-  dirLight = new THREE.DirectionalLight(0xfff1dd, 1.0);
+  scene.add(new THREE.AmbientLight(0x8f99ae, 0.55));
+  dirLight = new THREE.DirectionalLight(0xfff1dd, 0.95);
   dirLight.position.set(3, 7, 5);
   scene.add(dirLight);
-  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.9, 30);
+  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.85, 30);
   rimLight.position.set(-4, 3.2, -6);
   scene.add(rimLight);
+
+  /* file:// protokolü GLB yükleyemez (CORS) — öğretmene erken uyarı */
+  if(window.location && window.location.protocol === "file:"){
+    setTimeout(function(){
+      toast("Model dosyası için klasörde sunucu açın: python3 -m http.server — şimdilik maket gösteriliyor.", 6000);
+    }, 1200);
+  }
 
   /* REFERANS FOTOĞRAF SHOWROOM'U — tek çağrıda tüm mimari */
   buildShowroom();
@@ -776,7 +841,9 @@ function init(){
   controls.enableDamping = false;      // eski CPU için damping kapalı
   controls.enablePan = false;
   controls.minDistance = 4; controls.maxDistance = 13;
-  controls.minPolarAngle = Math.PI*0.14; controls.maxPolarAngle = Math.PI*0.495;
+  controls.minPolarAngle = Math.PI*0.16; controls.maxPolarAngle = Math.PI*0.495;
+  /* duvarın arkasına geçmeyi yasakla (yazı ters okunuyordu) */
+  controls.minAzimuthAngle = -1.15; controls.maxAzimuthAngle = 1.15;
   controls.rotateSpeed = 0.85;
   controls.addEventListener("start", function(){ userInteracting = true; clearTimeout(resumeTimer); });
   controls.addEventListener("end", function(){
@@ -883,6 +950,7 @@ function loadSlide(i, first){
     rimLight.color.setHex(data.accentHex);
     setAccent(data.accent);
     if(STAGE.wallTex) drawWallNames(i, data.accent);
+    if(STAGE.wmTex) drawWatermark(data.brand);
   }catch(e){}
 
   clearCurrentCar();
@@ -911,11 +979,14 @@ function loadSlide(i, first){
         showFallback(data, "Model işlemede hata — konsept maket gösteriliyor.");
       }
     }else{
-      /* dosya yok / yol hatalı / henüz indirilmedi → ÇÖKME YOK, maket */
+      /* dosya yok / yol hatalı / file:// CORS engeli → ÇÖKME YOK, maket */
+      var onFile = (window.location && window.location.protocol === "file:");
       var isFirstReal = (data.id==="mercedes");
-      showFallback(data, isFirstReal
-        ? "mercedes.glb bulunamadı — konsept maket gösteriliyor. (Dosyayı ./mercedes.glb yoluna koyun)"
-        : data.brand+" modeli henüz eklenmedi — konsept maket gösteriliyor.");
+      showFallback(data, onFile
+        ? "Tarayıcı file:// ile .glb yükleyemez (CORS). Terminalde: python3 -m http.server — sonra http://localhost:8000/otomobil-studyosu.html açın."
+        : (isFirstReal
+          ? "mercedes.glb bulunamadı — konsept maket gösteriliyor. (Dosyayı ./mercedes.glb yoluna koyun)"
+          : data.brand+" modeli henüz eklenmedi — konsept maket gösteriliyor."));
     }
   });
 }
