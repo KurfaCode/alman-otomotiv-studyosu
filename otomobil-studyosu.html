@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Alman Otomotiv Stüdyosu — 3D İnteraktif Sunum</title>
+<style>
+  :root{
+    --accent:#d4af37;
+    --accent-soft:rgba(212,175,55,.16);
+    --bg0:#0b0f17;
+    --bg1:#151d2a;
+    --card:rgba(13,18,30,.74);
+    --line:rgba(255,255,255,.11);
+    --txt:#eef2f8;
+    --mut:#9aa6bd;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;overflow:hidden;color:var(--txt);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    background:radial-gradient(120% 90% at 50% 22%, #1c2740 0%, var(--bg1) 34%, var(--bg0) 62%, #06090f 100%);
+    user-select:none;-webkit-user-select:none;
+  }
+  #scene-container{position:fixed;inset:0;z-index:0}
+  #scene-container canvas{display:block;touch-action:none}
+
+  /* vignette + studio glow */
+  #vignette{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(90% 70% at 50% 42%, transparent 55%, rgba(0,0,0,.5) 100%);}
+  #accent-glow{position:fixed;left:50%;top:62%;width:64vmin;height:22vmin;z-index:1;pointer-events:none;
+    transform:translate(-50%,-50%);filter:blur(70px);opacity:.28;background:var(--accent);border-radius:50%;
+    transition:background .5s ease}
+
+  .glass{background:var(--card);border:1px solid var(--line);border-radius:18px;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    box-shadow:0 18px 50px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06)}
+
+  /* ---- left info card ---- */
+  #info-card{position:fixed;z-index:5;left:22px;top:50%;transform:translateY(-50%);
+    width:min(440px,92vw);max-height:calc(100vh - 150px);overflow:auto;padding:0 0 16px;
+    transition:opacity .18s ease, transform .18s ease, border-color .4s ease}
+  #info-card.switching{opacity:0;transform:translateY(-50%) translateX(-16px)}
+  #info-card::-webkit-scrollbar{width:6px}
+  #info-card::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:4px}
+  .flag{display:flex;height:5px;border-radius:18px 18px 0 0;overflow:hidden}
+  .flag span{flex:1}
+  .flag span:nth-child(1){background:#000}
+  .flag span:nth-child(2){background:#dd0000}
+  .flag span:nth-child(3){background:#ffce00}
+  .card-body{padding:16px 20px 4px}
+  #speaker-badge{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:800;letter-spacing:.12em;
+    padding:7px 12px;border-radius:999px;border:1px solid var(--line);
+    background:var(--accent-soft);color:#fff}
+  #speaker-badge .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  #model-status{display:inline-flex;margin-left:8px;font-size:.68rem;font-weight:800;letter-spacing:.08em;
+    padding:6px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut);vertical-align:middle}
+  #model-status.real{color:#7CFFB2;border-color:rgba(124,255,178,.4);background:rgba(124,255,178,.08)}
+  #model-status.mock{color:#ffd27c;border-color:rgba(255,210,124,.4);background:rgba(255,210,124,.08)}
+  #brand{margin:12px 0 2px;font-size:2.15rem;line-height:1.02;font-weight:900;letter-spacing:.01em}
+  #brand-underline{height:3px;width:86px;border-radius:3px;background:var(--accent);box-shadow:0 0 14px var(--accent);margin:8px 0 10px}
+  #model-name{font-size:.95rem;color:var(--mut);font-weight:700;letter-spacing:.04em}
+  #slogan-de{margin:10px 0 2px;font-style:italic;font-size:1.12rem;font-weight:600}
+  #slogan-tr{color:var(--mut);font-size:.95rem;margin-bottom:12px}
+  #bullets{margin:8px 0 4px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+  #bullets li{display:flex;gap:10px;align-items:flex-start;font-size:1.02rem;line-height:1.45;
+    background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:10px 12px}
+  #bullets li b.tick{flex:0 0 22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;
+    background:var(--accent);color:#0b0f17;font-size:.85rem;font-weight:900}
+  #stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0 4px}
+  .stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;
+    padding:10px 8px;text-align:center}
+  .stat .v{font-weight:900;font-size:.98rem;color:#fff}
+  .stat .l{font-size:.7rem;color:var(--mut);margin-top:4px;letter-spacing:.05em;font-weight:700}
+
+  /* ---- dictionary ---- */
+  #dict{position:fixed;z-index:5;right:18px;top:16px;width:min(300px,80vw);padding:13px 15px;font-size:.86rem}
+  #dict h4{margin:0 0 8px;font-size:.78rem;letter-spacing:.14em;color:#fff;display:flex;align-items:center;gap:8px}
+  #dict h4 button{margin-left:auto;background:none;border:none;color:var(--mut);font-size:1rem;cursor:pointer}
+  #dict dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 10px}
+  #dict dt{font-weight:800;color:var(--accent)}
+  #dict dd{margin:0;color:#d6deeb}
+  #dict-toggle{position:fixed;z-index:5;right:18px;top:16px;display:none}
+
+  /* ---- bottom panel ---- */
+  #panel{position:fixed;z-index:6;left:50%;bottom:16px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;max-width:96vw;flex-wrap:wrap;justify-content:center}
+  .btn{min-height:52px;min-width:58px;padding:0 18px;border-radius:13px;border:1px solid rgba(255,255,255,.16);
+    background:rgba(255,255,255,.08);color:#fff;font-size:1.02rem;font-weight:800;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;touch-action:manipulation}
+  .btn:active{transform:scale(.96)}
+  .btn.primary{background:var(--accent);border-color:transparent;color:#0b0f17;box-shadow:0 6px 22px rgba(0,0,0,.4)}
+  .btn.small{min-height:52px;font-size:.9rem;padding:0 13px}
+  #counter{font-weight:800;font-size:.92rem;letter-spacing:.03em;padding:0 8px;white-space:nowrap}
+  #counter small{display:block;font-size:.68rem;color:var(--mut);font-weight:700;text-align:center}
+  #dots{display:flex;gap:7px;align-items:center;padding:0 4px}
+  #dots button{width:15px;height:15px;border-radius:50%;border:1px solid rgba(255,255,255,.35);
+    background:rgba(255,255,255,.14);cursor:pointer;padding:0;min-width:0}
+  #dots button.on{background:var(--accent);border-color:var(--accent);box-shadow:0 0 10px var(--accent);transform:scale(1.2)}
+
+  #fps{position:fixed;z-index:6;right:14px;bottom:14px;font-size:.7rem;color:var(--mut);
+    background:rgba(0,0,0,.4);padding:5px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.08)}
+  #toast{position:fixed;z-index:20;left:50%;top:18px;transform:translateX(-50%) translateY(-12px);opacity:0;
+    background:rgba(10,14,24,.92);border:1px solid var(--line);color:#fff;font-size:.85rem;font-weight:700;
+    padding:10px 16px;border-radius:12px;transition:all .25s ease;pointer-events:none;max-width:92vw;text-align:center}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  #loader{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;
+    background:radial-gradient(100% 100% at 50% 30%, #141d30 0%, #0b0f17 60%);transition:opacity .35s ease}
+  #loader.hide{opacity:0;pointer-events:none}
+  .spin{width:52px;height:52px;border-radius:50%;border:4px solid rgba(255,255,255,.14);border-top-color:var(--accent);animation:sp 0.9s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #load-bar-w{width:min(380px,80vw);height:8px;border-radius:6px;background:rgba(255,255,255,.1);overflow:hidden}
+  #load-bar{height:100%;width:0%;background:var(--accent);border-radius:6px;transition:width .15s}
+  #load-txt{font-size:.85rem;color:var(--mut);font-weight:700}
+  #fatal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;text-align:center;padding:24px}
+
+  @media (max-width:900px){
+    #info-card{left:12px;right:12px;top:auto;bottom:96px;transform:none;width:auto;max-height:44vh}
+    #info-card.switching{transform:translateY(10px)}
+    #brand{font-size:1.55rem}
+    #bullets li{font-size:.92rem}
+    #dict{display:none}
+    #dict-toggle{display:inline-flex}
+    #panel{gap:7px;padding:8px}
+    .btn{min-height:52px;padding:0 13px;font-size:.95rem}
+    #fps{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div id="scene-container"></div>
+<div id="vignette"></div>
+<div id="accent-glow"></div>
+
+<!-- SOL BİLGİ KARTI -->
+<section id="info-card" class="glass" aria-live="polite">
+  <div class="flag"><span></span><span></span><span></span></div>
+  <div class="card-body">
+    <span id="speaker-badge"><span class="dot"></span><span id="speaker-name">KONUŞMACI: OZAN</span></span>
+    <span id="model-status" class="mock">KONSEPT MAKET</span>
+    <h1 id="brand">MERCEDES-BENZ</h1>
+    <div id="brand-underline"></div>
+    <div id="model-name">S-Klasse / AMG</div>
+    <p id="slogan-de">“Das Beste oder nichts”</p>
+    <div id="slogan-tr">En iyisi ya da hiçbiri</div>
+    <ul id="bullets"></ul>
+    <div id="stats"></div>
+  </div>
+</section>
+
+<!-- SÖZLÜK -->
+<aside id="dict" class="glass">
+  <h4>📘 OTOMOTİV ALMANCASI <button id="dict-close" title="Kapat">✕</button></h4>
+  <dl>
+    <dt>Pferdestärke (PS)</dt><dd>Beygir Gücü</dd>
+    <dt>Allradantrieb</dt><dd>4×4 Çekiş</dd>
+    <dt>Heckantrieb</dt><dd>Arkadan İtiş</dd>
+    <dt>Höchstgeschwindigkeit</dt><dd>Maksimum Hız</dd>
+  </dl>
+</aside>
+<button id="dict-toggle" class="btn small glass">📘 Sözlük</button>
+
+<!-- ALT PANEL -->
+<nav id="panel" class="glass">
+  <button id="btn-prev" class="btn" aria-label="Önceki">❮ Önceki</button>
+  <div id="dots" role="tablist" aria-label="Slaytlar"></div>
+  <div id="counter">1 / 6<small>OZAN (Mercedes-Benz)</small></div>
+  <button id="btn-next" class="btn primary" aria-label="Sonraki">Sonraki ❯</button>
+  <button id="btn-rotate" class="btn small" title="Otomatik dönüş">⟳ Dönüyor</button>
+  <button id="btn-full" class="btn small" title="Tam ekran">⛶ Tam Ekran</button>
+</nav>
+
+<div id="fps">— FPS</div>
+<div id="toast"></div>
+
+<div id="loader">
+  <div class="spin"></div>
+  <div style="font-weight:900;letter-spacing:.1em">ALMAN OTOMOTİV STÜDYOSU</div>
+  <div id="load-bar-w"><div id="load-bar"></div></div>
+  <div id="load-txt">Sahne hazırlanıyor…</div>
+</div>
+<div id="fatal" class="glass"><div><h2>WebGL başlatılamadı</h2><p>Bu tahtanın tarayıcısı WebGL desteklemiyor. Lütfen Chrome / Edge ile açın.</p></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ================= 1) VERİ — 6 BÖLÜM ================= */
+var PRESENTATION_DATA = [
+  {
+    id:"mercedes", speaker:"OZAN", brand:"MERCEDES-BENZ", short:"Mercedes-Benz",
+    modelName:"S-Klasse / AMG", sloganDE:"Das Beste oder nichts", sloganTR:"En iyisi ya da hiçbiri",
+    accent:"#d4af37", accentHex:0xd4af37,
+    modelPaths:["mercedes.glb","./mercedes.glb","./models/mercedes.glb","./models/mercedes-benz.glb"],
+    bullets:[
+      "<b>1886 Carl &amp; Bertha Benz:</b> Dünyanın ilk patentli otomobili (Patent-Motorwagen) ve Bertha Benz'in tarihi 106 km'lik ilk uzun yol sürüşü.",
+      "<b>Güvenliğin Öncüsü:</b> Darbe emici kaza kafesi (1951), ilk elektronik ABS (1978) ve ESP sisteminin icadı.",
+      "<b>S-Klasse Vizyonu:</b> “S-Class'a gelen teknoloji 10 yıl sonra dünyadaki tüm standart arabalara gelir.”"
+    ],
+    stats:[{v:"1886",l:"İLK PATENT"},{v:"Level 3",l:"OTONOM"},{v:"3.8s",l:"0–100"}]
+  },
+  {
+    id:"bmw", speaker:"OSMAN", brand:"BMW", short:"BMW",
+    modelName:"M3 / M5 Competition — Bayerische Motoren Werke", sloganDE:"Freude am Fahren", sloganTR:"Sürüş Keyfi",
+    accent:"#2f9dff", accentHex:0x0066b1,
+    modelPaths:["./models/bmw.glb","./bmw.glb","bmw.glb"],
+    bullets:[
+      "<b>50:50 Ağırlık Dağılımı:</b> Kusursuz viraj kabiliyeti için ön ve arka aks arasında milimetrik eşit ağırlık dengesi.",
+      "<b>Sıralı 6 Silindir (Reihensechszylinder):</b> İpeksi güç dağılımı sağlayan efsanevi titreşimsiz motor mimarisi.",
+      "<b>BMW M Departmanı:</b> 1972'de yarış pistleri için kurulan dünyanın en agresif spor sedan üreticisi."
+    ],
+    stats:[{v:"50:50",l:"DENGE"},{v:"510 PS",l:"GÜÇ"},{v:"RWD",l:"ARKADAN İTİŞ"}]
+  },
+  {
+    id:"audi", speaker:"BİLAL", brand:"AUDI", short:"Audi",
+    modelName:"RS6 Avant / R8 V10", sloganDE:"Vorsprung durch Technik", sloganTR:"Teknoloji ile bir adım önde",
+    accent:"#e63946", accentHex:0xe63946,
+    modelPaths:["./models/audi.glb","./audi.glb","audi.glb"],
+    bullets:[
+      "<b>Dört Halka (Auto Union):</b> Audi, DKW, Horch ve Wanderer markalarının bir araya gelmesiyle doğan miras.",
+      "<b>Quattro 4×4 Devrimi:</b> 1980'lerde WRC rallilerini darmadağın eden, binek araçta dört çeker standardını kuran sistem.",
+      "<b>Aydınlatma Teknolojisi:</b> Otomotivde Matrix LED ve lazer far teknolojisinin küresel öncüsü."
+    ],
+    stats:[{v:"Quattro",l:"AWD"},{v:"600 PS",l:"GÜÇ"},{v:"1980",l:"RALLİ MİRASI"}]
+  },
+  {
+    id:"porsche", speaker:"EGE", brand:"PORSCHE", short:"Porsche",
+    modelName:"911 GT3 RS", sloganDE:"Die Legende lebt", sloganTR:"Efsane Yaşıyor",
+    accent:"#22c55e", accentHex:0x22c55e,
+    modelPaths:["./models/porsche.glb","./porsche.glb","porsche.glb"],
+    bullets:[
+      "<b>60 Yıllık Değişmeyen Siluet:</b> 1964'ten bu yana temel formu bozulmayan, arkadan motorlu ikonik 911 tasarımı.",
+      "<b>Boxer Motor:</b> Yere son derece yakın ağırlık merkezi sunan yatay yerleşimli 6 silindirli motor dehası.",
+      "<b>Le Mans Zafer Rekoru:</b> Dünyanın en zorlu 24 Saatlik Le Mans yarışında tam 19 genel klasman zaferi."
+    ],
+    stats:[{v:"9000",l:"RPM DEVİR"},{v:"4.0L",l:"ATMOSFERİK"},{v:"19",l:"LE MANS"}]
+  },
+  {
+    id:"vw", speaker:"BİRHAT", brand:"VOLKSWAGEN", short:"Volkswagen",
+    modelName:"Golf R / Beetle R-Line", sloganDE:"Das Auto · Volkswagen", sloganTR:"Halkın Arabası",
+    accent:"#3b82f6", accentHex:0x3b82f6,
+    modelPaths:["./models/volkswagen.glb","./models/vw.glb","./volkswagen.glb"],
+    bullets:[
+      "<b>Dünyayı Tekerleğe Kovan Marka:</b> 21 milyondan fazla satan ikonik Beetle (Tosbağa) ile otomobilin halka inmesi.",
+      "<b>Golf Fenomeni:</b> “Kompakt hatchback” sınıfının yaratıcısı; dünyada 37 milyondan fazla üretilen yaşam ikonu.",
+      "<b>Küresel Endüstri Devi:</b> Wolfsburg merkezli dev grup; bugün Audi, Porsche, Bentley ve Lamborghini'yi bünyesinde barındırır."
+    ],
+    stats:[{v:"37M+",l:"GOLF"},{v:"MQB",l:"PLATFORM"},{v:"#1",l:"GRUP"}]
+  },
+  {
+    id:"maybach", speaker:"MEHMET", brand:"MAYBACH", short:"Maybach",
+    modelName:"Mercedes-Maybach S680", sloganDE:"Ikonischer Luxus und Handwerkskunst", sloganTR:"İkonik Lüks ve El İşçiliği",
+    accent:"#d97706", accentHex:0xd97706,
+    modelPaths:["./models/maybach.glb","./maybach.glb","maybach.glb"],
+    bullets:[
+      "<b>Wilhelm Maybach Mirası:</b> Otomotivin kurucu dehalarından birinin adını taşıyan, Rolls-Royce seviyesindeki Alman zirvesi.",
+      "<b>İki Renkli Boya (Zweifarblackierung):</b> Gövdesi ustalar tarafından günlerce elle zımparalanıp boyanan kusursuz hat.",
+      "<b>Ultra Sessizlik ve Konfor:</b> V12 çift turbolu motor, masajlı yatar koltuklar, gümüş şampanya kadehleri ve aktif gürültü engelleme."
+    ],
+    stats:[{v:"6.0L V12",l:"BİTURBO"},{v:"NAPPA",l:"EL YAPIMI"},{v:"1ST",l:"CLASS KABİN"}]
+  }
+];
+
+/* ================= 2) DURUM ================= */
+var currentIndex = 0;
+var autoRotate = true;
+var navLock = false;            // 350ms geçiş kilidi
+var userInteracting = false;
+var resumeTimer = null;
+var loadToken = 0;
+var currentCar = null;
+var isFallback = false;
+var perfLevel = 0;              // 0 normal, 1 pixelRatio .75, 2 rim kapalı
+var lowFpsStreak = 0;
+
+/* ================= 3) SAHNE ================= */
+var container = document.getElementById("scene-container");
+var renderer, scene, camera, controls;
+var podiumGroup, carContainer, neonRing, rimLight, dirLight;
+var transitionT = 1;            // 0..1 pop animasyonu
+var clock;
+
+function toast(msg, ms){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove("show"); }, ms||2200);
+}
+
+function setAccent(hexCss){
+  document.documentElement.style.setProperty("--accent", hexCss);
+  document.documentElement.style.setProperty("--accent-soft", hexCss + "29");
+  var g = document.getElementById("accent-glow");
+  if(g) g.style.background = hexCss;
+}
+
+function hasWebGL(){
+  try{
+    var c = document.createElement("canvas");
+    return !!(window.WebGLRenderingContext && (c.getContext("webgl")||c.getContext("experimental-webgl")));
+  }catch(e){ return false; }
+}
+
+/* --- canvas dokuları (sıfır GPU maliyetli sahte gölge + fırçalı metal) --- */
+function makeShadowTexture(){
+  var c = document.createElement("canvas"); c.width = c.height = 256;
+  var x = c.getContext("2d");
+  var g = x.createRadialGradient(128,128,10,128,128,126);
+  g.addColorStop(0,"rgba(0,0,0,0.62)");
+  g.addColorStop(0.45,"rgba(0,0,0,0.38)");
+  g.addColorStop(0.75,"rgba(0,0,0,0.12)");
+  g.addColorStop(1,"rgba(0,0,0,0)");
+  x.fillStyle = g; x.fillRect(0,0,256,256);
+  var t = new THREE.CanvasTexture(c); return t;
+}
+function makeBrushedTexture(){
+  var c = document.createElement("canvas"); c.width = 256; c.height = 256;
+  var x = c.getContext("2d");
+  x.fillStyle = "#939cae"; x.fillRect(0,0,256,256);
+  for(var i=0;i<900;i++){
+    var y = Math.random()*256;
+    x.strokeStyle = "rgba("+(Math.random()>0.5?"255,255,255":"40,48,64")+","+(Math.random()*0.08)+")";
+    x.lineWidth = 1;
+    x.beginPath(); x.moveTo(0,y); x.lineTo(256,y+(Math.random()*2-1)); x.stroke();
+  }
+  var t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3,3);
+  return t;
+}
+function makePlateTexture(text){
+  var c = document.createElement("canvas"); c.width = 256; c.height = 64;
+  var x = c.getContext("2d");
+  x.fillStyle = "#f4f6fa"; x.fillRect(0,0,256,64);
+  x.fillStyle = "#0b3d91"; x.fillRect(0,0,34,64);
+  x.fillStyle = "#fff"; x.font = "bold 20px Arial"; x.fillText("TR",4,38);
+  x.fillStyle = "#111"; x.font = "bold 30px Arial"; x.textAlign="center";
+  x.fillText(text.substring(0,8).toUpperCase(), 148, 42);
+  return new THREE.CanvasTexture(c);
+}
+
+/* ================= 3B) SHOWROOM MİMARİSİ — referans fotoğraf, sıfır gerçek zamanlı maliyet ============
+   Fotoğraftaki dünya: simsiyah parlak zemin + siyah silindirik podyum + çift beyaz neon halka,
+   arkada panel derzli karanlık duvar, iki dikey ışık barı, saksılı minik ağaçlar, duvarda isimlik.
+   Hepsi MeshBasic/Standard + CanvasTexture. Gölge yok, yansıma yok (sahte parlama var),
+   gerçek ışık yok (emissive görünümlü basic malzeme). Toplam ~30 draw call, düşük GPU. */
+var STAGE = { wallCanvas:null, wallTex:null, floorRingAccent:null };
+
+function makeWallPanelTexture(){
+  var c = document.createElement("canvas"); c.width = 512; c.height = 256;
+  var x = c.getContext("2d");
+  var g = x.createLinearGradient(0,0,0,256);
+  g.addColorStop(0,"#141922"); g.addColorStop(0.55,"#0d1119"); g.addColorStop(1,"#080b12");
+  x.fillStyle = g; x.fillRect(0,0,512,256);
+  /* panel derzleri: dikey ince çizgiler */
+  x.fillStyle = "rgba(255,255,255,0.05)";
+  [102,204,307,409].forEach(function(px){ x.fillRect(px,0,2,256); });
+  x.fillStyle = "rgba(0,0,0,0.5)";
+  [104,206,309,411].forEach(function(px){ x.fillRect(px,0,1,256); });
+  /* üstten süzülen hafif spot gradyanı */
+  var s = x.createRadialGradient(256,0,10,256,0,260);
+  s.addColorStop(0,"rgba(255,255,255,0.10)"); s.addColorStop(1,"rgba(255,255,255,0)");
+  x.fillStyle = s; x.fillRect(0,0,512,256);
+  return new THREE.CanvasTexture(c);
+}
+/* Duvardaki isimlik: 6 konuşmacı, aktif olan accent renkte, diğerleri soluk gri.
+   "Çok sırıtmasın" diye küçük puntolu, ince, harf aralıklı. Slayt değişiminde yeniden çizilir. */
+function drawWallNames(activeIdx, accentCss){
+  var names = ["OZAN","EGE","OSMAN","BİRHAT","BİLAL","MEHMET"];
+  var c = STAGE.wallCanvas, x = c.getContext("2d");
+  x.clearRect(0,0,1024,128);
+  x.textAlign = "center"; x.textBaseline = "middle";
+  var step = 1024/6;
+  names.forEach(function(n,i){
+    var cx = step*i + step/2;
+    var on = (i===activeIdx);
+    x.font = (on?"700 ":"300 ")+"44px 'Segoe UI', Arial, sans-serif";
+    x.fillStyle = on ? accentCss : "rgba(200,208,222,0.5)";
+    try{ x.letterSpacing = "6px"; }catch(e){}
+    x.fillText(n.split("").join("  "), cx, 56);
+    if(on){
+      x.fillStyle = accentCss;
+      x.fillRect(cx-52, 96, 104, 4);
+    }else{
+      x.fillStyle = "rgba(255,255,255,0.10)";
+      x.fillRect(cx-52, 96, 104, 2);
+    }
+  });
+  STAGE.wallTex.needsUpdate = true;
+}
+function makeBarGlowTexture(){
+  var c = document.createElement("canvas"); c.width = 64; c.height = 256;
+  var x = c.getContext("2d");
+  var g = x.createLinearGradient(0,0,64,0);
+  g.addColorStop(0,"rgba(255,240,214,0)");
+  g.addColorStop(0.5,"rgba(255,240,214,0.55)");
+  g.addColorStop(1,"rgba(255,240,214,0)");
+  x.fillStyle = g; x.fillRect(0,0,64,256);
+  return new THREE.CanvasTexture(c);
+}
+function makeFloorSheenTexture(){
+  var c = document.createElement("canvas"); c.width = 256; c.height = 256;
+  var x = c.getContext("2d");
+  var g = x.createRadialGradient(128,128,8,128,128,128);
+  g.addColorStop(0,"rgba(150,175,220,0.20)");
+  g.addColorStop(0.5,"rgba(150,175,220,0.06)");
+  g.addColorStop(1,"rgba(150,175,220,0)");
+  x.fillStyle = g; x.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+function makeStreakTexture(){
+  var c = document.createElement("canvas"); c.width = 64; c.height = 256;
+  var x = c.getContext("2d");
+  var g = x.createLinearGradient(0,0,0,256);
+  g.addColorStop(0,"rgba(255,244,220,0.5)"); g.addColorStop(1,"rgba(255,244,220,0)");
+  x.fillStyle = g;
+  x.fillRect(24,0,16,256);
+  return new THREE.CanvasTexture(c);
+}
+/* Showroom'u kurar: zemin, sahte parlama, podyum + 3 halka, duvar, ışık barları, saksılar.
+   Dönen tek şey podiumGroup'tur (araba + podyum + halkalar birlikte). Duvar/saksı sabittir. */
+function buildShowroom(){
+  /* --- zemin: koyu, yarı parlak (reflector YOK, pahalı) --- */
+  var floor = new THREE.Mesh(
+    new THREE.CircleGeometry(22, 48),
+    new THREE.MeshStandardMaterial({color:0x0e131d, metalness:0.35, roughness:0.55})
+  );
+  floor.rotation.x = -Math.PI/2; floor.position.y = -0.02;
+  scene.add(floor);
+  /* sahte stüdyo parlaması: podyum altında büyük yumuşak ışık havuzu */
+  var sheen = new THREE.Mesh(
+    new THREE.PlaneGeometry(16,16),
+    new THREE.MeshBasicMaterial({map:makeFloorSheenTexture(), transparent:true, depthWrite:false})
+  );
+  sheen.rotation.x = -Math.PI/2; sheen.position.y = -0.005;
+  scene.add(sheen);
+
+  /* --- podyum: siyah parlak silindir (fotoğraftaki gibi) --- */
+  podiumGroup = new THREE.Group();
+  scene.add(podiumGroup);
+  var podium = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.4, 3.55, 0.34, 64),
+    new THREE.MeshStandardMaterial({color:0x0d1119, metalness:0.55, roughness:0.3})
+  );
+  podium.position.y = 0.15;
+  podiumGroup.add(podium);
+  var podiumTop = new THREE.Mesh(
+    new THREE.CircleGeometry(3.4, 64),
+    new THREE.MeshStandardMaterial({color:0x121722, metalness:0.5, roughness:0.35})
+  );
+  podiumTop.rotation.x = -Math.PI/2; podiumTop.position.y = 0.322;
+  podiumGroup.add(podiumTop);
+
+  /* HALKA 1 (beyaz, podyum üstü — fotoğraftaki ince beyaz çizgi) */
+  var innerRing = new THREE.Mesh(
+    new THREE.TorusGeometry(2.95, 0.018, 8, 96),
+    new THREE.MeshBasicMaterial({color:0xf4f6ff})
+  );
+  innerRing.rotation.x = Math.PI/2; innerRing.position.y = 0.325;
+  podiumGroup.add(innerRing);
+  /* HALKA 2 (marka rengi, podyum yan çeperi — slaytla renk değiştirir) */
+  neonRing = new THREE.Mesh(
+    new THREE.TorusGeometry(3.5, 0.022, 8, 96),
+    new THREE.MeshBasicMaterial({color:PRESENTATION_DATA[0].accentHex})
+  );
+  neonRing.rotation.x = Math.PI/2; neonRing.position.y = 0.1;
+  podiumGroup.add(neonRing);
+  /* HALKA 3 (zeminde büyük beyaz çember — fotoğraftaki dış halka) */
+  STAGE.floorRingAccent = new THREE.Mesh(
+    new THREE.RingGeometry(4.35, 4.41, 96),
+    new THREE.MeshBasicMaterial({color:0xe8ecf5, transparent:true, opacity:0.8, side:THREE.DoubleSide})
+  );
+  STAGE.floorRingAccent.rotation.x = -Math.PI/2; STAGE.floorRingAccent.position.y = 0.0;
+  scene.add(STAGE.floorRingAccent);
+
+  /* SAHTE TEMAS GÖLGESİ */
+  var shadowPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(6.4, 3.6),
+    new THREE.MeshBasicMaterial({map:makeShadowTexture(), transparent:true, depthWrite:false})
+  );
+  shadowPlane.rotation.x = -Math.PI/2; shadowPlane.position.y = 0.335;
+  podiumGroup.add(shadowPlane);
+
+  carContainer = new THREE.Group();
+  carContainer.position.y = 0.34;
+  podiumGroup.add(carContainer);
+
+  /* --- arka duvar: panel dokulu tek quad (1 draw call) --- */
+  var wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(26, 7),
+    new THREE.MeshBasicMaterial({map:makeWallPanelTexture()})
+  );
+  wall.position.set(0, 3.4, -9);
+  scene.add(wall);
+  /* duvar süpürgeliği LED şeridi (fotoğraftaki yatay çizgi) */
+  var base = new THREE.Mesh(
+    new THREE.BoxGeometry(22, 0.045, 0.045),
+    new THREE.MeshBasicMaterial({color:0xdfe7f5})
+  );
+  base.position.set(0, 0.55, -8.75);
+  scene.add(base);
+  /* isimlik */
+  STAGE.wallCanvas = document.createElement("canvas");
+  STAGE.wallCanvas.width = 1024; STAGE.wallCanvas.height = 128;
+  STAGE.wallTex = new THREE.CanvasTexture(STAGE.wallCanvas);
+  var namePlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(9, 1.125),
+    new THREE.MeshBasicMaterial({map:STAGE.wallTex, transparent:true, depthWrite:false})
+  );
+  namePlane.position.set(0, 4.4, -8.72);
+  scene.add(namePlane);
+  drawWallNames(0, PRESENTATION_DATA[0].accent);
+
+  /* --- dikey ışık barları (gerçek ışık DEĞİL: basic malzeme, 0 GPU yük) --- */
+  var glowTex = makeBarGlowTexture();
+  [-8.6, 8.6].forEach(function(bx){
+    var bar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 5.6, 0.12),
+      new THREE.MeshBasicMaterial({color:0xfff0d6})
+    );
+    bar.position.set(bx, 3.0, -7.6);
+    scene.add(bar);
+    var halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.1, 5.6),
+      new THREE.MeshBasicMaterial({map:glowTex, transparent:true, opacity:0.5, depthWrite:false, blending:THREE.AdditiveBlending})
+    );
+    halo.position.set(bx, 3.0, -7.7);
+    scene.add(halo);
+    /* zemindeki sahte yansıma çizgisi (fotoğraftaki parke yansıması) */
+    var streak = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.5, 6),
+      new THREE.MeshBasicMaterial({map:makeStreakTexture(), transparent:true, opacity:0.35, depthWrite:false})
+    );
+    streak.rotation.x = -Math.PI/2;
+    streak.position.set(bx*0.92, 0.005, -3.5);
+    scene.add(streak);
+    /* yan sütun bloğu */
+    var col = new THREE.Mesh(
+      new THREE.BoxGeometry(1.1, 6.4, 1.1),
+      new THREE.MeshStandardMaterial({color:0x0b0e15, metalness:0.2, roughness:0.8})
+    );
+    col.position.set(bx*1.12, 3.2, -8.0);
+    scene.add(col);
+  });
+
+  /* --- saksı + bodur ağaç (düşük poli: kutu + silindir + 1 ikosahedron) --- */
+  var potMat = new THREE.MeshStandardMaterial({color:0x141a26, metalness:0.2, roughness:0.8});
+  var trunkMat = new THREE.MeshStandardMaterial({color:0x3a2d20, roughness:0.9});
+  var leafMat = new THREE.MeshStandardMaterial({color:0x1c2b1f, roughness:1.0});
+  [[-6.4,-6.6],[6.4,-6.6],[-9.4,-5.2],[9.4,-5.2]].forEach(function(p){
+    var pot = new THREE.Mesh(new THREE.BoxGeometry(1.7,0.72,0.9), potMat);
+    pot.position.set(p[0], 0.36, p[1]); scene.add(pot);
+    var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.08,0.9,6), trunkMat);
+    trunk.position.set(p[0], 1.1, p[1]); scene.add(trunk);
+    var leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.62,0), leafMat);
+    leaf.position.set(p[0], 1.85, p[1]); leaf.scale.y = 1.25; scene.add(leaf);
+    var leaf2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4,0), leafMat);
+    leaf2.position.set(p[0]+0.3, 1.5, p[1]+0.15); scene.add(leaf2);
+    /* saksı içi mini uplight: yine gerçek ışık değil, küçük basic küre */
+    var up = new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8), new THREE.MeshBasicMaterial({color:0xffe9bd}));
+    up.position.set(p[0], 0.78, p[1]); scene.add(up);
+  });
+}
+
+/* ================= 4) KONSEPT MAKET ARABA (fallback) ================= */
+function buildConceptCar(accentHex, id){
+  var g = new THREE.Group();
+  var L = 4.4, W = 1.9;
+  var cabinLen = 1.7, cabinH = 0.62, tall = false, long = false, wing = false, wagon = false;
+
+  if(id==="porsche"){ L=4.3; cabinLen=1.5; cabinH=0.5; wing=true; }
+  if(id==="audi"){ wagon=true; cabinLen=2.3; cabinH=0.58; }
+  if(id==="vw"){ L=3.9; cabinLen=1.9; cabinH=0.72; tall=true; }
+  if(id==="maybach"){ L=4.9; cabinLen=2.0; cabinH=0.6; long=true; }
+  if(id==="bmw"){ L=4.45; cabinLen=1.65; cabinH=0.55; }
+  if(id==="mercedes"){ L=4.7; cabinLen=1.9; cabinH=0.58; long=true; }
+
+  var bodyMat  = new THREE.MeshStandardMaterial({color:0x171e2c, metalness:0.72, roughness:0.34});
+  var bodyMat2 = null;
+  if(id==="maybach"){
+    bodyMat = new THREE.MeshStandardMaterial({color:0x2b1420, metalness:0.7, roughness:0.36});
+    bodyMat2 = new THREE.MeshStandardMaterial({color:0xd9b36a, metalness:0.75, roughness:0.3});
+  }
+  var glassMat = new THREE.MeshStandardMaterial({color:0x0a1220, metalness:0.9, roughness:0.1});
+  var tireMat  = new THREE.MeshStandardMaterial({color:0x0a0a0c, metalness:0.05, roughness:0.92});
+  var rimMat   = new THREE.MeshStandardMaterial({color:0xd4d8e0, metalness:0.9, roughness:0.28});
+  var calMat   = new THREE.MeshBasicMaterial({color:accentHex});
+  var trimMat  = new THREE.MeshBasicMaterial({color:accentHex});
+  var headMat  = new THREE.MeshBasicMaterial({color:0xeaf4ff});
+  var tailMat  = new THREE.MeshBasicMaterial({color:0xff2b2b});
+
+  /* alt gövde: aerodinamik yan silüet */
+  var s = new THREE.Shape();
+  var hl = L/2, baseY = 0.32, topY = tall?0.86:0.78;
+  s.moveTo(-hl, baseY);
+  s.lineTo(-hl-0.06, 0.58);
+  s.quadraticCurveTo(-hl+0.15, topY-0.06, -hl+0.7, topY-0.04);
+  s.lineTo(hl-0.9, topY);
+  s.quadraticCurveTo(hl-0.15, topY-0.05, hl+0.02, 0.55);
+  s.lineTo(hl-0.02, baseY);
+  s.quadraticCurveTo(0, baseY-0.08, -hl, baseY);
+  var bodyGeo = new THREE.ExtrudeGeometry(s, {depth:W-0.24, bevelEnabled:true, bevelThickness:0.09, bevelSize:0.09, bevelSegments:1, steps:1});
+  bodyGeo.translate(0, 0, -(W-0.24)/2);
+  var body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.12;
+  g.add(body);
+
+  /* maybach iki renk: üst kuşak şampanya */
+  if(bodyMat2){
+    var band = new THREE.Mesh(new THREE.BoxGeometry(L*0.62, 0.1, W+0.06), bodyMat2);
+    band.position.set(-0.15, 0.86, 0); g.add(band);
+  }
+
+  /* kabin / camlar */
+  var cx = wagon ? -0.35 : (id==="vw" ? -0.2 : -0.15);
+  var cs = new THREE.Shape();
+  var cl = cabinLen/2, cy0 = topY+0.08, cy1 = topY + cabinH;
+  if(tall) cy1 += 0.1;
+  cs.moveTo(cx-cl, cy0);
+  cs.quadraticCurveTo(cx-cl+0.25, cy1-0.05, cx-cl+0.65, cy1);
+  cs.lineTo(cx+cl-0.45, cy1);
+  cs.quadraticCurveTo(cx+cl-0.05, cy1-0.08, cx+cl, cy0);
+  cs.lineTo(cx-cl, cy0);
+  var cabGeo = new THREE.ExtrudeGeometry(cs, {depth:1.5, bevelEnabled:true, bevelThickness:0.05, bevelSize:0.05, bevelSegments:1});
+  cabGeo.translate(0, 0, -0.75);
+  var cabin = new THREE.Mesh(cabGeo, glassMat);
+  cabin.position.y = 0.12;
+  g.add(cabin);
+
+  /* neon yan çizgi */
+  var strip = new THREE.Mesh(new THREE.BoxGeometry(L*0.86, 0.035, W+0.1), trimMat);
+  strip.position.set(0, 0.52, 0); g.add(strip);
+  /* ön farlar */
+  [-1,1].forEach(function(k){
+    var h = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.1, 0.42), headMat);
+    h.position.set(hl-0.02, 0.66, k*0.58); g.add(h);
+    var t = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.09, 0.4), tailMat);
+    t.position.set(-hl-0.05, 0.66, k*0.58); g.add(t);
+  });
+  /* ön ızgara */
+  var grille = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.2, 1.1),
+    new THREE.MeshStandardMaterial({color:0x05070c, metalness:0.6, roughness:0.5}));
+  grille.position.set(hl+0.03, 0.5, 0); g.add(grille);
+  if(id==="bmw"){ /* böbrek ızgara + M şerit */
+    var k1 = new THREE.Mesh(new THREE.BoxGeometry(0.05,0.18,0.3), new THREE.MeshBasicMaterial({color:0x0a0a0a}));
+    var k2 = k1.clone();
+    k1.position.set(hl+0.05,0.5,-0.17); k2.position.set(hl+0.05,0.5,0.17);
+    g.add(k1); g.add(k2);
+    var cols=[0x2f9dff,0x0a1a3a,0xff2b2b];
+    cols.forEach(function(cc,i){
+      var mm = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.03,0.07), new THREE.MeshBasicMaterial({color:cc}));
+      mm.position.set(-0.4+i*0.16, 0.92, (W/2)+0.02); mm.rotation.y = 0.06; g.add(mm);
+    });
+  }
+  if(wing){ /* GT3 RS kanadı */
+    var wm = new THREE.MeshStandardMaterial({color:0x11151f, metalness:0.6, roughness:0.4});
+    var blade = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.05, 1.8), wm);
+    blade.position.set(-hl-0.25, 1.35, 0); g.add(blade);
+    [-0.7,0.7].forEach(function(z){
+      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.42, 0.06), wm);
+      leg.position.set(-hl-0.2, 1.1, z); g.add(leg);
+    });
+  }
+  if(id==="mercedes"){ /* krom çıta + yıldız hissi */
+    var chrome = new THREE.Mesh(new THREE.BoxGeometry(L*0.7, 0.03, 0.02),
+      new THREE.MeshBasicMaterial({color:0xf5e6b8}));
+    chrome.position.set(0, 0.68, (W/2)+0.06); g.add(chrome);
+    var chrome2 = chrome.clone(); chrome2.position.z = -(W/2)-0.06; g.add(chrome2);
+  }
+
+  /* tekerlekler */
+  function wheel(px, pz, r){
+    var wg = new THREE.Group();
+    var tire = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.3, 20), tireMat);
+    tire.rotation.x = Math.PI/2; wg.add(tire);
+    var rim = new THREE.Mesh(new THREE.CylinderGeometry(r*0.55, r*0.55, 0.32, 12), rimMat);
+    rim.rotation.x = Math.PI/2; wg.add(rim);
+    var cap = new THREE.Mesh(new THREE.CylinderGeometry(r*0.14, r*0.14, 0.34, 8), calMat);
+    cap.rotation.x = Math.PI/2; wg.add(cap);
+    wg.position.set(px, r+0.02, pz);
+    return wg;
+  }
+  var wr = (id==="porsche") ? 0.37 : 0.36;
+  var wx = L/2 - 0.95;
+  g.add(wheel( wx,  (W/2)-0.02, wr));
+  g.add(wheel( wx, -(W/2)+0.02, wr));
+  g.add(wheel(-wx,  (W/2)-0.02, wr));
+  g.add(wheel(-wx, -(W/2)+0.02, wr));
+
+  /* plaka */
+  var plate = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.155),
+    new THREE.MeshBasicMaterial({map:makePlateTexture(id)}));
+  plate.position.set(-hl-0.12, 0.48, 0); plate.rotation.y = -Math.PI/2;
+  g.add(plate);
+
+  /* far hüzmesi hissi: ince accent alt parlaması */
+  var glow = new THREE.Mesh(new THREE.PlaneGeometry(L*0.95, 0.9),
+    new THREE.MeshBasicMaterial({color:accentHex, transparent:true, opacity:0.1, depthWrite:false}));
+  glow.rotation.x = -Math.PI/2; glow.position.y = 0.03;
+  g.add(glow);
+
+  g.traverse(function(o){ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } });
+  return g;
+}
+
+/* ================= 5) BELLEK TEMİZLİĞİ ================= */
+function disposeObject(root){
+  if(!root) return;
+  root.traverse(function(o){
+    if(o.geometry) { try{ o.geometry.dispose(); }catch(e){} }
+    if(o.material){
+      var mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(function(m){
+        for(var k in m){
+          var v = m[k];
+          if(v && v.isTexture){ try{ v.dispose(); }catch(e){} }
+        }
+        try{ m.dispose(); }catch(e){}
+      });
+    }
+  });
+}
+
+/* ================= 6) INIT ================= */
+function init(){
+  if(!window.THREE){
+    document.getElementById("fatal").style.display = "flex";
+    document.getElementById("loader").classList.add("hide");
+    document.getElementById("load-txt").textContent = "Three.js CDN yüklenemedi (internet gerekli).";
+    return false;
+  }
+  if(!hasWebGL()){
+    document.getElementById("fatal").style.display = "flex";
+    document.getElementById("loader").classList.add("hide");
+    return false;
+  }
+
+  renderer = new THREE.WebGLRenderer({
+    antialias:false,                 // fill-rate katili: kapalı
+    powerPreference:"high-performance",
+    precision:"mediump",
+    stencil:false, alpha:false
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0)); // asla 1.0'ı aşmaz
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = false; // dinamik gölge yasak
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  container.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0f17);
+  scene.fog = new THREE.Fog(0x0b0f17, 14, 34);
+
+  camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+  camera.position.set(5.4, 2.5, 6.9);
+
+  /* SADECE 3 HAFİF IŞIK (duvar/barlar/ağaçlar gerçek ışık kullanmaz) */
+  scene.add(new THREE.AmbientLight(0x9aa3b8, 0.8));
+  dirLight = new THREE.DirectionalLight(0xfff1dd, 1.0);
+  dirLight.position.set(3, 7, 5);
+  scene.add(dirLight);
+  rimLight = new THREE.PointLight(PRESENTATION_DATA[0].accentHex, 0.9, 30);
+  rimLight.position.set(-4, 3.2, -6);
+  scene.add(rimLight);
+
+  /* REFERANS FOTOĞRAF SHOWROOM'U — tek çağrıda tüm mimari */
+  buildShowroom();
+
+  /* kontroller — dokunmatik orbit */
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1.0, 0);
+  controls.enableDamping = false;      // eski CPU için damping kapalı
+  controls.enablePan = false;
+  controls.minDistance = 4; controls.maxDistance = 13;
+  controls.minPolarAngle = Math.PI*0.14; controls.maxPolarAngle = Math.PI*0.495;
+  controls.rotateSpeed = 0.85;
+  controls.addEventListener("start", function(){ userInteracting = true; clearTimeout(resumeTimer); });
+  controls.addEventListener("end", function(){
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(function(){ userInteracting = false; }, 2500);
+  });
+
+  clock = new THREE.Clock();
+  window.addEventListener("resize", onResize);
+  buildDots();
+  bindUI();
+  updateCard(PRESENTATION_DATA[0], true);
+  loadSlide(0, true);
+  animate();
+  setTimeout(function(){ document.getElementById("loader").classList.add("hide"); }, 600);
+  return true;
+}
+
+function onResize(){
+  if(!renderer) return;
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+/* ================= 7) MODEL YÜKLEME + FALLBACK ================= */
+function setStatus(real){
+  var el = document.getElementById("model-status");
+  isFallback = !real;
+  if(real){ el.textContent = "● GERÇEK MODEL"; el.className = "real"; el.id = "model-status"; }
+  else{ el.textContent = "○ KONSEPT MAKET"; el.className = "mock"; el.id = "model-status"; }
+}
+
+function normalizeModel(obj){
+  var box = new THREE.Box3().setFromObject(obj);
+  var size = new THREE.Vector3(); box.getSize(size);
+  var center = new THREE.Vector3(); box.getCenter(center);
+  var maxDim = Math.max(size.x, size.z, 0.001);
+  var target = 4.3;
+  var s = target / maxDim;
+  if(!isFinite(s) || s<=0) s = 1;
+  s = Math.min(Math.max(s, 0.2), 8);
+  obj.scale.setScalar(s);
+  /* yeniden ölç, tabana oturt */
+  var b2 = new THREE.Box3().setFromObject(obj);
+  var c2 = new THREE.Vector3(); b2.getCenter(c2);
+  obj.position.x -= c2.x; obj.position.z -= c2.z;
+  obj.position.y -= b2.min.y;
+  obj.traverse(function(o){ if(o.isMesh){ o.castShadow=false; o.receiveShadow=false; } });
+}
+
+function clearCurrentCar(){
+  if(currentCar){
+    carContainer.remove(currentCar);
+    disposeObject(currentCar);
+    currentCar = null;
+  }
+  /* carContainer'da kalmış yabancı obje varsa temizle (RAM taşmasını önle) */
+  for(var i=carContainer.children.length-1;i>=0;i--){
+    var ch = carContainer.children[i];
+    carContainer.remove(ch); disposeObject(ch);
+  }
+}
+
+function showFallback(data, reason){
+  clearCurrentCar();
+  var car = buildConceptCar(data.accentHex, data.id);
+  carContainer.add(car);
+  currentCar = car;
+  transitionT = 0;
+  setStatus(false);
+  if(reason) toast(reason);
+}
+
+function tryLoadPaths(paths, idx, data, token, onDone){
+  if(idx >= paths.length){ onDone(false); return; }
+  var path = paths[idx];
+  try{
+    var loader = new THREE.GLTFLoader();
+    loader.load(path,
+      function(gltf){ if(token!==loadToken) return; onDone(true, gltf); },
+      function(xhr){
+        if(xhr && xhr.total>0){
+          var p = Math.round((xhr.loaded/xhr.total)*100);
+          var bar = document.getElementById("load-bar");
+          if(bar) bar.style.width = p+"%";
+          var t = document.getElementById("load-txt");
+          if(t) t.textContent = "Model yükleniyor: %"+p+" ("+data.brand+")";
+        }
+      },
+      function(){ if(token!==loadToken) return; tryLoadPaths(paths, idx+1, data, token, onDone); }
+    );
+  }catch(e){ tryLoadPaths(paths, idx+1, data, token, onDone); }
+}
+
+var LOAD_TIMEOUT = 20000;
+function loadSlide(i, first){
+  var data = PRESENTATION_DATA[i];
+  var token = ++loadToken;
+
+  /* neon + rim + duvar isimliği anında marka rengine */
+  try{
+    neonRing.material.color.setHex(data.accentHex);
+    rimLight.color.setHex(data.accentHex);
+    setAccent(data.accent);
+    if(STAGE.wallTex) drawWallNames(i, data.accent);
+  }catch(e){}
+
+  clearCurrentCar();
+
+  var timedOut = false;
+  var timer = setTimeout(function(){
+    timedOut = true;
+    if(token!==loadToken) return;
+    showFallback(data, data.brand+" modeli zaman aşımına uğradı — konsept maket gösteriliyor.");
+  }, LOAD_TIMEOUT);
+
+  tryLoadPaths(data.modelPaths, 0, data, token, function(ok, gltf){
+    if(token!==loadToken) return;
+    clearTimeout(timer);
+    if(timedOut) return;
+    if(ok && gltf && gltf.scene){
+      try{
+        clearCurrentCar();
+        var obj = gltf.scene;
+        normalizeModel(obj);
+        carContainer.add(obj);
+        currentCar = obj;
+        transitionT = 0;
+        setStatus(true);
+      }catch(e){
+        showFallback(data, "Model işlemede hata — konsept maket gösteriliyor.");
+      }
+    }else{
+      /* dosya yok / yol hatalı / henüz indirilmedi → ÇÖKME YOK, maket */
+      var isFirstReal = (data.id==="mercedes");
+      showFallback(data, isFirstReal
+        ? "mercedes.glb bulunamadı — konsept maket gösteriliyor. (Dosyayı ./mercedes.glb yoluna koyun)"
+        : data.brand+" modeli henüz eklenmedi — konsept maket gösteriliyor.");
+    }
+  });
+}
+
+/* ================= 8) ARAYÜZ ================= */
+function updateCard(data, instant){
+  var card = document.getElementById("info-card");
+  function fill(){
+    document.getElementById("speaker-name").textContent = "KONUŞMACI: "+data.speaker;
+    document.getElementById("brand").textContent = data.brand;
+    document.getElementById("model-name").textContent = data.modelName;
+    document.getElementById("slogan-de").textContent = "\u201C"+data.sloganDE+"\u201D";
+    document.getElementById("slogan-tr").textContent = data.sloganTR;
+    var ul = document.getElementById("bullets"); ul.innerHTML = "";
+    data.bullets.forEach(function(b){
+      var li = document.createElement("li");
+      li.innerHTML = '<b class="tick">✓</b><span>'+b+'</span>';
+      ul.appendChild(li);
+    });
+    var st = document.getElementById("stats"); st.innerHTML = "";
+    data.stats.forEach(function(s){
+      var d = document.createElement("div"); d.className="stat";
+      d.innerHTML = '<div class="v">'+s.v+'</div><div class="l">'+s.l+'</div>';
+      st.appendChild(d);
+    });
+    var c = document.getElementById("counter");
+    c.innerHTML = (currentIndex+1)+" / 6<small>"+data.speaker+" ("+data.short+")</small>";
+    var dots = document.getElementById("dots").children;
+    for(var k=0;k<dots.length;k++){ dots[k].classList.toggle("on", k===currentIndex); }
+    card.classList.remove("switching");
+  }
+  if(instant){ fill(); return; }
+  card.classList.add("switching");
+  setTimeout(fill, 170);
+}
+
+function buildDots(){
+  var d = document.getElementById("dots"); d.innerHTML="";
+  for(var i=0;i<6;i++){
+    (function(k){
+      var b = document.createElement("button");
+      b.title = PRESENTATION_DATA[k].brand;
+      b.setAttribute("aria-label", PRESENTATION_DATA[k].brand);
+      b.addEventListener("click", function(){ requestNavTo(k); });
+      d.appendChild(b);
+    })(i);
+  }
+}
+
+/* 350ms geçiş kilidi — kızılötesi dokunmatik tufanına karşı */
+function navGuard(fn){
+  if(navLock) return false;
+  navLock = true;
+  setTimeout(function(){ navLock = false; }, 350);
+  fn();
+  return true;
+}
+function requestNavTo(k){
+  navGuard(function(){
+    if(k===currentIndex) return;
+    currentIndex = (k+6)%6;
+    updateCard(PRESENTATION_DATA[currentIndex]);
+    loadSlide(currentIndex);
+  });
+}
+function next(){ requestNavTo((currentIndex+1)%6); }
+function prev(){ requestNavTo((currentIndex+5)%6); }
+
+function toggleFullscreen(){
+  try{
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      var el = document.documentElement;
+      if(el.requestFullscreen) el.requestFullscreen();
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    }else{
+      if(document.exitFullscreen) document.exitFullscreen();
+      else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  }catch(e){ toast("Tam ekran açılamadı."); }
+}
+
+function bindUI(){
+  document.getElementById("btn-next").addEventListener("click", next);
+  document.getElementById("btn-prev").addEventListener("click", prev);
+  document.getElementById("btn-full").addEventListener("click", toggleFullscreen);
+  var br = document.getElementById("btn-rotate");
+  br.addEventListener("click", function(){
+    autoRotate = !autoRotate;
+    br.textContent = autoRotate ? "\u27F3 Dönüyor" : "\u23F8 Duraklatıldı";
+    toast(autoRotate ? "Otomatik dönüş açık" : "Otomatik dönüş kapalı");
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key==="ArrowRight" || e.key===" "){ e.preventDefault(); next(); }
+    else if(e.key==="ArrowLeft"){ e.preventDefault(); prev(); }
+    else if(e.key==="f" || e.key==="F"){ toggleFullscreen(); }
+  });
+
+  /* hızlı flick = slayt değiştir, yavaş sürükleme = orbit (çakışmayı önler) */
+  var tx=0, ty=0, tt=0;
+  window.addEventListener("touchstart", function(e){
+    if(e.touches.length===1){ tx=e.touches[0].clientX; ty=e.touches[0].clientY; tt=Date.now(); }
+  }, {passive:true});
+  window.addEventListener("touchend", function(e){
+    if(e.changedTouches.length!==1) return;
+    if(e.target && (e.target.closest("#panel")||e.target.closest("#info-card")||e.target.closest("#dict"))) return;
+    var dx = e.changedTouches[0].clientX - tx;
+    var dy = e.changedTouches[0].clientY - ty;
+    var dt = Date.now() - tt;
+    if(dt<600 && Math.abs(dx)>110 && Math.abs(dy)<60){
+      if(dx<0) next(); else prev();
+    }
+  }, {passive:true});
+
+  var dc = document.getElementById("dict-close");
+  var dict = document.getElementById("dict");
+  var dt2 = document.getElementById("dict-toggle");
+  if(dc) dc.addEventListener("click", function(){ dict.style.display="none"; dt2.style.display="inline-flex"; });
+  if(dt2) dt2.addEventListener("click", function(){
+    dict.style.display = (window.innerWidth<=900) ? "block" : "block";
+    dict.style.position="fixed"; dict.style.zIndex="8";
+    dt2.style.display="none";
+  });
+}
+
+/* ================= 9) DÖNGÜ + OTO PERFORMANS ================= */
+var fpsFrames = 0, fpsLast = performance.now();
+function animate(){
+  requestAnimationFrame(animate);
+  var dt = Math.min(clock.getDelta(), 0.05);
+
+  /* podyum dönüşü */
+  if(autoRotate && !userInteracting && podiumGroup){
+    podiumGroup.rotation.y += 0.003;
+  }
+  /* geçiş pop animasyonu (scale + yükselme, GC üretmez) */
+  if(transitionT < 1 && carContainer){
+    transitionT = Math.min(1, transitionT + dt*2.6);
+    var e = 1 - Math.pow(1-transitionT, 3);
+    var sc = 0.82 + 0.18*e;
+    carContainer.scale.set(sc, sc, sc);
+    carContainer.position.y = 0.34 + (1-e)*0.35;
+    carContainer.rotation.y = (1-e)*-0.5;
+  } else if(carContainer){
+    carContainer.scale.set(1,1,1);
+  }
+  if(controls) controls.update();
+  if(renderer && scene && camera) renderer.render(scene, camera);
+
+  /* FPS + otomatik kalite düşürme (eski Intel GPU kurtarıcı) */
+  fpsFrames++;
+  var now = performance.now();
+  if(now - fpsLast >= 1000){
+    var fps = Math.round(fpsFrames*1000/(now-fpsLast));
+    fpsFrames = 0; fpsLast = now;
+    var el = document.getElementById("fps");
+    if(el) el.textContent = fps+" FPS" + (perfLevel>0 ? " · PERF"+perfLevel : "");
+    if(fps < 24 && transitionT>=1){
+      lowFpsStreak++;
+      if(lowFpsStreak>=3){
+        lowFpsStreak = 0;
+        if(perfLevel===0){
+          perfLevel = 1;
+          try{ renderer.setPixelRatio(0.75); }catch(e){}
+          toast("Performans modu: çözünürlük optimize edildi.");
+        }else if(perfLevel===1){
+          perfLevel = 2;
+          try{ rimLight.visible = false; }catch(e){}
+          toast("Performans modu+: rim ışığı kapatıldı.");
+        }
+      }
+    }else if(fps > 45){ lowFpsStreak = 0; }
+  }
+}
+
+/* global hata kalkanı — sunum asla boş kalmaz */
+window.addEventListener("error", function(e){
+  if(!currentCar && podiumGroup){
+    try{ showFallback(PRESENTATION_DATA[currentIndex], "Beklenmedik hata yakalandı — maket devrede."); }catch(_){}
+  }
+});
+
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded", init);
+}else{
+  init();
+}
+})();
+</script>
+</body>
+</html>
