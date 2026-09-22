@@ -11,6 +11,11 @@
    (main.js'teki onCinematic). Böylece okul tahtasında internet
    olmasa da, video kaldırılmış olsa da sunum çalışır.
 
+   Kaynak zinciri: zayıf tahtalarda (Faz 1/2) filmin 720p30 sürümü
+   denenir, o yoksa/bozuksa tam 1080p sürüme, o da olmazsa sahne
+   turuna düşülür. 1080p60'ı Intel HD 3000/4000 akıcı çözemiyor;
+   film kare kare atlamasın diye bu zincir vardır.
+
    Kapı açıkken sahne kısayolları kilitlenir: shell.js
    document.body üzerindeki "intro-open" sınıfına bakar.
    ============================================================ */
@@ -50,6 +55,7 @@ export function createIntro(opts) {
 
   function stopVideo() {
     state.watching = false;
+    clearTimeout(state.guard);
     if (!video) return;
     try {
       video.pause();
@@ -82,28 +88,52 @@ export function createIntro(opts) {
     if (note) note.textContent = "Tanıtım filmi oynatılıyor…";
 
     if (!video) { fallback("video yok"); return; }
-    const src = (CFG.intro && CFG.intro.video) || "";
-    if (!src) { fallback("kaynak tanımsız"); return; }
+
+    /* Kaynak zinciri: hafif sürüm → tam sürüm. Tek bir dosyaya
+       bağlanmıyoruz; biri okunamazsa diğeri denenir. */
+    const main = (CFG.intro && CFG.intro.video) || "";
+    const light = (CFG.intro && CFG.intro.videoLight) || "";
+    const chain = (o.light && light ? [light, main] : [main]).filter(function (s) { return !!s; });
+    if (!chain.length) { fallback("kaynak tanımsız"); return; }
 
     let started = false;
-    const onError = function () { if (!started) fallback("okuma hatası"); };
-    video.addEventListener("error", onError);
+    let attempt = 0;
+
+    function arm() {
+      /* Emniyet kemeri: 6 sn içinde tek kare bile gelmediyse sıradaki
+         kaynak denenir, o da yoksa tur başlar. */
+      clearTimeout(state.guard);
+      state.guard = setTimeout(function () {
+        if (!started && state.watching) next("zaman aşımı");
+      }, 6000);
+    }
+
+    function next(reason) {
+      /* Film kapatıldıysa emniyet kemeri geri getirmesin: yoksa
+         "Sunumla Devam Et"ten sonra ses arkada çalmaya devam ederdi. */
+      if (!state.watching || started || attempt >= chain.length) {
+        if (state.watching && !started) fallback(reason || "okuma hatası");
+        return;
+      }
+      const src = chain[attempt++];
+      video.src = src;
+      try { video.currentTime = 0; } catch (e) { }
+      const p = video.play();
+      if (p && typeof p.catch === "function") {
+        p.catch(function () { next("oynatma reddedildi"); });
+      }
+      arm();
+    }
+
+    video.addEventListener("error", function () { next("okuma hatası"); });
     video.addEventListener("ended", function () { close("video"); });
     video.addEventListener("playing", function () {
       started = true;
+      clearTimeout(state.guard);
       if (note) note.textContent = "Tanıtım filmi oynatılıyor…";
     });
-    video.src = src;
-    try { video.currentTime = 0; } catch (e) { }
-    const p = video.play();
-    if (p && typeof p.catch === "function") {
-      p.catch(function () { fallback("oynatma reddedildi"); });
-    }
-    /* Emniyet kemeri: 6 sn içinde tek kare bile gelmediyse tur başlar. */
-    clearTimeout(state.guard);
-    state.guard = setTimeout(function () {
-      if (!started && state.watching) fallback("zaman aşımı");
-    }, 6000);
+
+    next();
   }
 
   function open() {

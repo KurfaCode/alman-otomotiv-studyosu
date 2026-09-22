@@ -1,7 +1,7 @@
 import * as THREE from "../vendor/three/three.module.js";
 import { OrbitControls } from "../vendor/three/addons/controls/OrbitControls.js";
 
-import { CFG, level as levelOf, parseLevel, guessStartLevel } from "./config.js";
+import { CFG, level as levelOf, parseLevel, deviceClass } from "./config.js";
 import { BRANDS, CATEGORIES, brandAt } from "./data/brands.js";
 import { applyRendererSettings, buildEnvironment } from "./scene/environment.js";
 import { createStage } from "./scene/stage.js";
@@ -31,7 +31,7 @@ const params = new URLSearchParams(window.location.search);
 
 const app = {
   renderer: null, scene: null, camera: null, controls: null,
-  env: null, stage: null, reflect: null,
+  env: null, stage: null, reflect: null, device: null,
   loader: null, loaderUI: null, panel: null, cards: null, shell: null,
   monitor: null, director: null, anchors: null, leaders: null,
   reflectionCap: 512, preferLight: false, usingLight: false,
@@ -627,14 +627,18 @@ function init() {
 
   app.loader = createLoader();
   const forcedLevel = parseLevel(params.get("perf"));
-  const guessed = guessStartLevel(
+  /* Cihaz sınıfı: Faz 1/2 akıllı tahtaları (WebGL 1, 2-4 çekirdek)
+     hem "Dengeli" kademede hem de HAFİF model sürümüyle başlar — açılışta
+     1M üçgenlik tam modeli çizmeye çalışıp takılmasın. */
+  app.device = deviceClass(
     navigator,
     window.screen ? window.screen.width : 0,
     window.screen ? window.screen.height : 0,
-    window.devicePixelRatio
+    window.devicePixelRatio,
+    app.renderer
   );
   app.monitor = createMonitor({
-    startLevel: forcedLevel === null ? guessed : forcedLevel,
+    startLevel: forcedLevel === null ? app.device.level : forcedLevel,
     forced: forcedLevel,
     onLevel: function (lv, announce) {
       applyQuality(lv, announce);
@@ -643,6 +647,8 @@ function init() {
   });
 
   if (params.get("light") === "1") app.preferLight = true;
+  if (params.get("light") === "0") app.preferLight = false;
+  else if (app.device.light) app.preferLight = true;
   if (params.get("debug") === "1") {
     app.shell.setDebug(true);
     app.diag = diag;
@@ -692,6 +698,21 @@ function init() {
     app.last = performance.now();
   });
 
+  /* Tahtada sekme kapanırken GPU kaynakları bırakılır: başka bir
+     programa (akıllı defter, tarayıcı) geçildiğinde arka planda VRAM/RAM
+     şişmesi kalmasın. bfcache ile geri dönüş bozulmasın diye
+     persisted olayında dokunulmaz. */
+  window.addEventListener("pagehide", function (e) {
+    if (e && e.persisted) return;
+    try { if (app.reflect && app.reflect.api && app.reflect.api.dispose) app.reflect.api.dispose(); } catch (err) { }
+    try {
+      if (app.renderer) {
+        app.renderer.dispose();
+        if (typeof app.renderer.forceContextLoss === "function") app.renderer.forceContextLoss();
+      }
+    } catch (err) { }
+  });
+
   /* beklenmedik hata: sahne boş kalmasın (hata konsola da yazılır ki
      gerçek sorun görünmez olmasın) */
   window.addEventListener("error", function (e) {
@@ -710,6 +731,10 @@ function init() {
   /* Giriş kapısı: "İntro İzle" filmi açar, "Sunumla Devam Et" atlar.
      Film yoksa/oynatılamazsa sahne sinematik turunu oynatır. */
   app.introGate = createIntro({
+    /* Zayıf tahtada ya da ?light=1 ile zorlanmışsa filmin 720p30 sürümü
+       oynatılır (1080p60'ı HD 3000/4000 akıcı çözemez); dosya yoksa tam
+       sürüme, o da yoksa sahne turuna düşer. */
+    light: app.device.videoLight || app.preferLight,
     onDone: function (mode) {
       if (mode === "cinematic") startCinematicTour();
       else app.shell.toast("Sunum hazır · ← → ile markalar arasında geçin", 2600);

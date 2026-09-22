@@ -164,11 +164,49 @@ denenir ve ilk başarılı dosya sahneye çıkar; kök dizindeki ham bir model �
 panel doğru modeli yazarken sahneye başka bir araç çıkar (Audi'de tam bu olmuştu).
 Test bunu her marka için zorunlu tutar.
 
+## Akıllı tahta uyumu (MEB Faz 1–4)
+
+Okullardaki tahtalar dört nesil; proje hepsinde açılmalı. Ölçülen gerçek kare yükü:
+
+| | tam model | hafif model (`*-light.glb`) |
+|---|---|---|
+| üçgen / kare | **2.113.644** | **211.025** |
+| çizim çağrısı | 227 | 114 |
+
+Yani zayıf cihazda geometri **10 kat** azalır. Buna ek olarak:
+
+- **Piksel tavanı:** `devicePixelRatio` en fazla 1, toplam çizim yüzeyi 2,2 megapiksel
+  (`src/main.js` → `applyQuality`). 4K tahtada ekran kartı 8,3M piksel çizmez.
+- **Dinamik gölge yok:** `renderer.shadowMap.enabled = false`; podyum gölgesi önceden
+  çizilmiş canvas dokusudur (kare başı maliyet ~0).
+- **Kademe merdiveni** (FPS < 26 ise iner, > 52 ise çıkar):
+  `Tam` → `Dengeli` (ayna kare atlar) → `Hafif` (ayna kapanır, süsler ve jant
+  animasyonu kapanır) → `Tahta` (DPR 0,55). Son kademede 1920×1080 tahta
+  1056×594 çizer: takılma yerine hafif bulanık ama akıcı sunum.
+- **Hafif model sürümü:** son kademeye inildiğinde aynı aracın `*-light.glb` kopyası
+  yüklenir (bir kez; geri dönmez).
+- **Tahta profili baştan uygulanır:** WebGL 1 donanımı ya da ≤ 4 çekirdek/4 GB RAM
+  görülürse (Faz 1/2) sahne hem `Dengeli` başlar hem **doğrudan hafif modelle** açılır.
+  Yoksa tahta ilk saniyelerde 1M üçgenlik modeli çizmeye çalışıp takılırdı
+  (`deviceClass` — `src/config.js`).
+- **Hafif intro:** Faz 1/2'de 1080p60 film yerine 720p30 sürümü oynar
+  (`media/intro-720.mp4`); o dosya yoksa tam sürüme, o da yoksa sahne turuna düşer.
+- **Kapanışta GPU bırakılır:** `pagehide` olayında ayna hedefi ve WebGL bağlamı
+  serbest bırakılır (bfcache ile geri dönüş korunur); sekme görünmezken kare çizilmez.
+
+⚠️ **three.js sürümü bilinçli olarak r160'ta tutulur.** r163 WebGL 1 desteğini
+kaldırdı; Faz 1/2 tahtaları yalnızca WebGL 1 verir ve o sürümde sahne hiç açılmaz.
+`node tools/test-core.mjs` bu sürüm kilidini denetler (`≤ 162` ve `webgl` bağlam
+zinciri vendor dosyasında aranır).
+
+Ezme parametreleri: `?perf=0..3` (kademe), `?light=1|0` (hafif model + hafif intro),
+`?norefl=1` (ayna kapalı).
+
 ## Doğrulama
 
 ```bash
 npm run check                 # modül sözdizimi + import yolları + içerik kapsaması
-node tools/test-core.mjs      # 202 birim testi: ölçek/yön/jant/kamera/kalite/içerik
+node tools/test-core.mjs      # 219 birim testi: ölçek/yön/jant/kamera/kalite/içerik
 node tools/diagnose.mjs       # GERÇEK GLB'lerde sınıflandırma + jant dönüş ölçümü
 ```
 
@@ -196,3 +234,10 @@ Model optimizasyonu ve doğrulaması: `tools/optimize-models.md`.
   sayılmaz: konum eşiği gövde yarısının %55'idir.
 - Modeller artık repoda (35 MB): yayınlanan sürümde de gerçek arabalar vardır.
   Yalnızca kökteki ham `.glb` dosyaları ve 144 MB'lık ham video kaydı dışarıda kalır.
+- Faz 1 tahtasında (i3-2310M + Intel HD 3000, 4 GB) kare hızı **garanti edilemez** —
+  bu donanım 2011 nesli ve yazılım tarafında yapılabileceklerin tamamı yapıldı
+  (piksel tavanı, hafif model, ayna kapatma, gölgesiz sahne). Tahta 26 FPS altında
+  kalırsa sunum `Tahta` kademesinde okunabilir kalır, ama akıcılık o cihazın
+  sınırıdır. En temiz çözüm: tahtada Chrome/Edge güncel tutmak ve sekmeyi tek
+  başına açmak (akıllı defter gibi ağır programlar arka planda çalışırken tahta
+  ekran kartını paylaştırır).

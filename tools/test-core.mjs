@@ -9,13 +9,14 @@
      • jant aks ekseninin yerel uzayda bulunması
      • kamera odaklarının kutup/azimut sınırları içinde kalması
      • performans kademelerinin düşme ve geri yükselme davranışı
+     • akıllı tahta sınıflandırması (Faz 1/2 güvenli başlangıç profili)
      • konsept maketin sahne arayüzünü doğru doldurması
 
    Kullanım:  node tools/test-core.mjs
    ============================================================ */
 
 import * as THREE from "../vendor/three/three.module.js";
-import { CFG, level as levelOf, guessStartLevel } from "../src/config.js";
+import { CFG, level as levelOf, guessStartLevel, deviceClass, parseLevel } from "../src/config.js";
 import { prepareCar, classifyKind } from "../src/scene/car.js";
 import { buildConceptCar } from "../src/scene/concept.js";
 import { computeAnchors } from "../src/scene/focus.js";
@@ -538,14 +539,23 @@ function run(seconds, fps) {
 run(4, 12);            /* 12 FPS: 3 örnek sonrası kademe düşmeli */
 ok(monitor.level === 1, "düşük FPS'te kalite kademesi düştü", monitor.level);
 run(4, 12);
-ok(monitor.level === 2, "ısrar eden düşük FPS'te son kademeye inildi", monitor.level);
-run(12, 60);
-ok(monitor.level < 2, "cihaz toparlanınca kademe geri alındı", monitor.level);
+ok(monitor.level === 2, "ısrar eden düşük FPS'te Hafif kademeye inildi", monitor.level);
+/* En kötü durum: Faz 1 tahtası hâlâ 26 FPS tutturamıyorsa son
+   kademeye (Tahta) kadar inilmeli — takılma yerine düşük çözünürlük. */
+run(8, 12);
+ok(monitor.level === CFG.perf.levels.length - 1, "direnen zayıf cihazda en hafif kademeye kadar inildi", monitor.level);
+ok(CFG.perf.levels[3].label === "Tahta" && CFG.perf.levels[3].dpr < CFG.perf.levels[2].dpr,
+  "son kademe çözünürlüğü bir tık daha kısıyor", CFG.perf.levels[3].dpr);
+run(20, 60);
+ok(monitor.level < CFG.perf.levels.length - 1, "cihaz toparlanınca kademe geri alındı", monitor.level);
 ok(events.length >= 3, "kademe değişimleri bildirildi (" + events.join("→") + ")");
 
 const forced = createMonitor({ startLevel: 0, forced: 2, onLevel: function () { events.push("forced"); } });
 run(4, 10);
 ok(forced.level === 2, "zorlanan kademe otomatik ayar tarafından değiştirilmiyor", forced.level);
+/* ?perf=3 gibi zorlamalar son kademeyi aşmamalı */
+ok(parseLevel("3") === CFG.perf.levels.length - 1 && parseLevel("99") === CFG.perf.levels.length - 1,
+  "?perf değeri son kademeyle sınırlandı", parseLevel("99"));
 
 globalThis.performance = realPerf;
 
@@ -556,12 +566,52 @@ ok(guessStartLevel({ hardwareConcurrency: 2, deviceMemory: 4, maxTouchPoints: 10
   "zayıf cihaz Dengeli kademede başlıyor");
 ok(guessStartLevel({ hardwareConcurrency: 16, deviceMemory: 16, maxTouchPoints: 0 }, 2560, 1440, 2) === CFG.perf.startLevel,
   "güçlü cihaz Tam kademede başlıyor");
+
+/* --- Akıllı tahta nesilleri (MEB Faz 1-4) ---
+   Faz 1/2: WebGL 1 donanımı ve 2-4 çekirdek. Bu cihazlar hem Dengeli
+   kademede başlamalı hem de DOĞRUDAN hafif model sürümünü yüklemeli;
+   yoksa açılışta 1M üçgenlik modeli çizmeye çalışıp takılır, ancak
+   FPS ölçeri düştükten sonra toparlanırdı. --- */
+const faz1 = deviceClass({ hardwareConcurrency: 2, deviceMemory: 4, maxTouchPoints: 10 }, 1920, 1080, 1,
+  { capabilities: { isWebGL2: false } });
+ok(faz1.webgl1 === true && faz1.light === true,
+  "Faz 1 tahtası (WebGL 1) hafif model sürümüyle başlıyor");
+ok(faz1.level === 1 && faz1.videoLight === true,
+  "Faz 1 tahtası Dengeli kademede ve 720p intro'da başlıyor", faz1.level);
+ok(deviceClass({ hardwareConcurrency: 4, deviceMemory: 8, maxTouchPoints: 0 }, 1920, 1080, 1,
+  { capabilities: { isWebGL2: false } }).light === true,
+  "WebGL 1 tek başına hafif sürümü tetikliyor (Faz 2)");
+/* Faz 3/4 tahtaları cezalandırılmamalı: 8 çekirdek + WebGL 2 + 4K */
+const faz4 = deviceClass({ hardwareConcurrency: 8, deviceMemory: 8, maxTouchPoints: 10 }, 3840, 2160, 1,
+  { capabilities: { isWebGL2: true } });
+ok(faz4.level === 0 && faz4.light === false && faz4.videoLight === false,
+  "Faz 3/4 tahtasında tam kalite ve tam model korunuyor", faz4.level);
+ok(CFG.perf.levels[1].dpr <= 0.9,
+  "Dengeli kademede DPR kısılıyor (tahta çözünürlüğü boşa yakmıyor)", CFG.perf.levels[1].dpr);
+
+/* --- vektör kitaplığı sürüm kilidi ---
+   three r163 WebGL 1 desteğini kaldırdı. Faz 1/2 tahtaları yalnızca
+   WebGL 1 verir; sürüm ilerlerse bu tahtalarda sahne hiç açılmaz.
+   Bu test, sessizce r163+ sürüme geçilmesini engeller. --- */
+const threeSrc = fs.readFileSync("vendor/three/three.module.js", "utf8");
+const revMatch = threeSrc.match(/const REVISION = '(\d+)'/);
+const rev = revMatch ? parseInt(revMatch[1], 10) : 999;
+ok(rev > 0 && rev <= 162,
+  "three sürümü WebGL 1 destekleyen bir sürüm (" + rev + " ≤ 162)", rev);
+ok(threeSrc.indexOf("'webgl2', 'webgl', 'experimental-webgl'") >= 0,
+  "WebGL 2 yoksa WebGL 1 bağlamına düşülüyor (Faz 1/2 tahtası)");
 ok(CFG.perf.levels[1].reflectEvery >= 2 || CFG.perf.levels[1].reflection === 0,
   "Dengeli kademede ayna kare atlıyor", CFG.perf.levels[1].reflectEvery);
 ok(levelOf(-5).index === 0 && levelOf(99).index === CFG.perf.levels.length - 1, "kademe indeksi sınırlandı");
 ok(CFG.perf.levels[0].reflection > CFG.perf.levels[1].reflection, "yansıma çözünürlüğü kademeyle düşüyor");
-ok(CFG.perf.levels[2].reflection === 0, "en hafif kademede yansıma kapalı");
+ok(CFG.perf.levels[2].reflection === 0, "Hafif kademede yansıma kapalı");
 ok(CFG.perf.levels[2].decorations === false && CFG.perf.levels[2].wheelSpin === false, "en hafif kademede süsler ve jant animasyonu kapalı");
+
+/* Intro kaynak zinciri: hafif sürüm tanımlı olmalı ve dosya yerinde
+   olmalı; yoksa Faz 1 tahtasında 1080p60 film kare kare atlar. */
+ok(!!CFG.intro.videoLight && fs.existsSync(CFG.intro.videoLight),
+  "intro'nun hafif (720p) sürümü tanımlı ve yerinde", CFG.intro.videoLight);
+ok(fs.existsSync(CFG.intro.video), "intro tam sürümü yerinde", CFG.intro.video);
 
 BRANDS.forEach(function (b) {
   ok(!!b.accent && /^#[0-9a-f]{6}$/i.test(b.accent), b.short + " vurgu rengi geçerli");

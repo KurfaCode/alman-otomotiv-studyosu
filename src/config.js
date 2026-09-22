@@ -90,6 +90,11 @@ export const CFG = {
       { label: "Tam",     dpr: 1.00, reflection: 512, reflectEvery: 1, decorations: true,  wheelSpin: true,  maxLights: true },
       { label: "Dengeli", dpr: 0.85, reflection: 256, reflectEvery: 2, decorations: true,  wheelSpin: true,  maxLights: false },
       { label: "Hafif",   dpr: 0.70, reflection: 0,   reflectEvery: 1, decorations: false, wheelSpin: false, maxLights: false },
+      /* En kötü durum (Faz 1 tahtası, i3-2310M + HD 3000): Hafif kademe
+         bile 26 FPS'i tutturamazsa çözünürlük bir kademe daha kısılır.
+         1920×1080 tahtada 1056×594'e iner — dolgu hızı %60 azalır,
+         yani takılma yerine hafif bulanık ama akıcı bir sunum kalır. */
+      { label: "Tahta",   dpr: 0.55, reflection: 0,   reflectEvery: 1, decorations: false, wheelSpin: false, maxLights: false },
     ],
   },
 
@@ -100,9 +105,12 @@ export const CFG = {
   },
 
   /* Giriş kapısı (intro). Video yolu değişirse yalnızca burası düzeltilir;
-     dosya yoksa/bozuksa sahne kendi sinematik turunu oynatır (intro.js). */
+     dosya yoksa/bozuksa sahne kendi sinematik turunu oynatır (intro.js).
+     videoLight: zayıf tahtalar (Faz 1/2) için 720p30 sürüm — 1080p60'ı
+     Intel HD 3000/4000 akıcı çözemez, filmi kare kare atlamasın. */
   intro: {
     video: "media/intro.mp4",
+    videoLight: "media/intro-720.mp4",
     seconds: 30,
     /* Sinematik tur adımları: marka dizini + kategori + süre (ms).
        Kategori odağı kamerayı da taşır (aimAt), yani tur bir kurgu gibi
@@ -141,18 +149,49 @@ export const CFG = {
   },
 };
 
-/* Zayıf cihaz sezgisi: çekirdek sayısı düşük ya da ekran yoğunluğu 1 olan
-   (tipik okul tahtası) cihazlarda sahne "Dengeli" kademede başlar. Kullanıcı
-   ?perf=… ile bunu ezebilir; FPS ölçer yine kendi ayarını yapar. */
-export function guessStartLevel(nav, screenW, screenH, dpr) {
-  const cores = nav && nav.hardwareConcurrency ? nav.hardwareConcurrency : 8;
-  const memory = nav && nav.deviceMemory ? nav.deviceMemory : 8;
-  const touch = !!(nav && nav.maxTouchPoints);
+/* Cihaz sınıfı: MEB akıllı tahtası nesillerine göre başlangıç ayarı.
+
+   Faz 1 (Vestel 2012-15: i3-2310M/3110M, HD 3000/4000, 4 GB)
+   Faz 2 (Vestel 2015-20: i5-4200M/4210M, HD 4600, 4-8 GB)
+     → WebGL 1 donanımı, 2-4 mantıksal çekirdek
+   Faz 3/4 (2021+: i5-8250U…1235U, UHD 620 / Iris Xe, 8-16 GB)
+     → WebGL 2, 8+ çekirdek
+
+   Zayıf sınıfta iki şey birden yapılır: kademe "Dengeli" başlar VE
+   doğrudan optimize edilmiş hafif model yüklenir. Yoksa tahta önce
+   1M üçgenlik tam modeli çizmeye çalışıp ilk saniyelerde takılır,
+   ancak FPS ölçeri devreye girince kendini toparlardı — açılışta
+   takılmadan başlaması için bu karar burada, baştan verilir.
+
+   Kullanıcı ?perf=… ve ?light=0/1 ile ezebilir. */
+export function deviceClass(nav, screenW, screenH, dpr, gl) {
+  const n = nav || {};
+  const cores = n.hardwareConcurrency ? n.hardwareConcurrency : 8;
+  const memory = n.deviceMemory ? n.deviceMemory : 8;
+  const touch = !!n.maxTouchPoints;
   const ratio = dpr || 1;
   const weak = cores <= 4 || memory <= 4;
   /* 1366×768 ve benzeri düşük yoğunluklu paneller: tahta olasılığı yüksek */
   const board = touch && ratio <= 1.1 && screenW >= 1000 && screenW <= 1600 && screenH <= 900;
-  return weak || board ? 1 : CFG.perf.startLevel;
+  /* WebGL 1 = 2011-2013 nesli ekran kartı: ayna + tam detay model lüks */
+  const webgl1 = !!(gl && gl.capabilities && gl.capabilities.isWebGL2 === false);
+  const low = weak || webgl1;
+  return {
+    cores: cores,
+    memory: memory,
+    webgl1: webgl1,
+    weak: weak,
+    board: board,
+    level: low || board ? 1 : CFG.perf.startLevel,
+    light: low,
+    videoLight: low || board,
+  };
+}
+
+/* Kısa yol: yalnızca başlangıç kademesi soruluyorsa (testler ve eski
+   çağrılar) deviceClass'ın kademesini döndürür. */
+export function guessStartLevel(nav, screenW, screenH, dpr) {
+  return deviceClass(nav, screenW, screenH, dpr, null).level;
 }
 
 export function level(i) {
