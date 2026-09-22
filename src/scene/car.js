@@ -338,8 +338,23 @@ function splitFrontLens(mesh, mat, parts, center, size) {
 
   const frontMat = mat.clone();
   frontMat.name = (mat.name || "lens") + "::front";
+  markLensCover(frontMat);
   mesh.material = [frontMat, mat];
   return frontMat;
+}
+
+/* Lamba CAMI/gövdesi işareti.
+
+   Audi'de olduğu gibi bütün lamba donanımı TEK materyalde toplanırsa o
+   materyal bir "far camı"dır: tam güçte yakıldığında tamponun yarısı
+   bembeyaz bir leke olur. Bu yüzden camlar/gövdeler (1) kısılmış güçle
+   yanar (40%) ve (2) ton eşlemesi açık kalır — parlaklık kırpılmak
+   yerine yuvarlanır: lamba yanar ama patlamaz. */
+function markLensCover(m) {
+  if (!m || !m.userData) return;
+  m.userData.lensCover = true;
+  m.userData.powerScale = 0.4;
+  return m;
 }
 
 /* Işıkları GEOMETRİDEN bulur: isimler işe yaramadığında (Sketchfab
@@ -417,6 +432,8 @@ function classifyLightsByGeometry(scene3d, parts, kindOf, center, size, staged, 
   function add(rec, key) {
     const end = endOf(key);
     let m = rec.m;
+    /* İsimden "lens" çıkan materyal bir lamba CAMIDIR: kısılmış güçle yanar. */
+    if (isStaged(m)) markLensCover(m);
     const used = endsOf.get(m);
     if (used && used.has(-end)) {
       /* Aynı uç için tek kopya yeter: dört mesh için dört kopya
@@ -429,6 +446,7 @@ function classifyLightsByGeometry(scene3d, parts, kindOf, center, size, staged, 
         clone = m.clone();
         clone.name = (m.name || "lens") + (end > 0 ? "::front" : "::rear");
         shelf[end] = clone;
+        markLensCover(clone);
       }
       const mesh = rec.mesh;
       if (mesh && mesh.material) {
@@ -740,9 +758,16 @@ export function prepareCar(scene3d) {
         m.envMapIntensity = 1.4;
         m.side = THREE.DoubleSide;
       } else if (kind === "paint") {
-        m.envMapIntensity = 1.25;
-        if ("roughness" in m) m.roughness = Math.min(Math.max(m.roughness, 0.04), 0.24);
-        if ("metalness" in m) m.metalness = Math.max(m.metalness, 0.55);
+        /* Otomotiv boyası AYNA DEĞİLDİR. Audi'nin boya materyali 0,035
+           pürüzlülükle geliyordu; eski üst sınır 0,04 olduğu için boya
+           cilalı plastik gibi davranıp stüdyo ışıklarını kaputta sert
+           beyaz lekeler hâlinde yansıtıyordu ("dokular saçma"). Gerçek
+           boya 0,14–0,32 pürüzlülükte yumuşak bir parlaklık verir. */
+        m.envMapIntensity = 1.05;
+        if ("roughness" in m) m.roughness = Math.min(Math.max(m.roughness, 0.14), 0.32);
+        if ("metalness" in m) {
+          m.metalness = Math.min(Math.max(m.metalness, 0.35), 0.75);
+        }
       } else if (kind === "rim") {
         m.envMapIntensity = 1.45;
         if ("metalness" in m) m.metalness = Math.max(m.metalness, 0.8);
@@ -788,6 +813,14 @@ export function prepareCar(scene3d) {
         m.toneMapped = false;
         m.needsUpdate = true;
       } catch (e) { }
+    });
+  });
+
+  /* Lamba camları ton eşlemesine döner: parlaklık kırpılmaz, yuvarlanır.
+     (Aksi hâlde kocaman bir lamba gövdesi tam beyaz bir leke olurdu.) */
+  Object.keys(parts.lights).forEach(function (key) {
+    parts.lights[key].forEach(function (m) {
+      if (m && m.userData && m.userData.lensCover) m.toneMapped = true;
     });
   });
 

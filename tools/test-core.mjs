@@ -111,6 +111,28 @@ function fakeModel(nodeName) {
   return outer;
 }
 
+/* Canvas yalnızca doku üretiminde kullanılıyor (ışık donanımı huzme/hale
+   dokusu çizer): tarayıcısız testte küçük bir taklit yeterli, GPU'ya hiç
+   yüklenmiyor. Işık donanımı testleri ondan ÖNCE çalıştığı için burada,
+   dosyanın başında tanımlıdır. */
+if (typeof globalThis.document === "undefined") {
+  globalThis.document = {
+    createElement: function () {
+      return {
+        width: 0, height: 0,
+        getContext: function () {
+          return {
+            fillStyle: "",
+            createRadialGradient: function () { return { addColorStop: function () { } }; },
+            createLinearGradient: function () { return { addColorStop: function () { } }; },
+            fillRect: function () { },
+          };
+        },
+      };
+    },
+  };
+}
+
 /* ================= 1) model hazırlama ================= */
 section("1) Model normalizasyonu (santimetre birimli sahte model)");
 const car = prepareCar(fakeModel());
@@ -133,6 +155,13 @@ car.object.traverse(function (o) {
 ok(asphaltVisible === false, "asfalt düzlemi gizlendi");
 
 ok(car.parts.paint.length === 1, "boya grubu bulundu (1 mesh)", car.parts.paint.length);
+/* Boya AYNA olmamalı: 0,04 pürüzlülükte kalan boya stüdyo ışıklarını
+   kaputta sert beyaz lekeler hâlinde yansıtıyordu. */
+const paintMat = car.parts.paint[0].material;
+ok(paintMat.roughness >= 0.139 && paintMat.roughness <= 0.321,
+  "boya pürüzlülüğü otomotiv boyası aralığında", paintMat.roughness);
+ok(paintMat.metalness >= 0.34 && paintMat.metalness <= 0.76,
+  "boya metalliği sınırlar içinde", paintMat.metalness);
 ok(car.parts.glass.length === 1, "cam grubu bulundu", car.parts.glass.length);
 ok(car.parts.interior.length === 1, "iç mekân grubu bulundu", car.parts.interior.length);
 ok(car.parts.lights.low.length === 2, "far (lowbeam) 2 mesh", car.parts.lights.low.length);
@@ -269,6 +298,16 @@ let splitGroups = null;
   if (o.isMesh && o.material && Array.isArray(o.material)) splitGroups = o.geometry.groups.length;
 });
 ok(splitGroups === 2, "bölünen mesh iki gruba ayrıldı (ön / geri kalan)", splitGroups);
+
+/* Lamba CAMI tam güçte yanmaz: Audi'de bütün lamba donanımı tek materyalde
+   olduğu için tam güçte tamponun yarısı bembeyaz bir leke oluyordu. */
+const lensLight = createLighting(lensCar);
+const cover = lensCar.parts.lights.low[0];
+lensLight.toggleLow();
+ok(cover.userData && cover.userData.lensCover === true, "lamba camı işaretlendi (lensCover)");
+ok(cover.toneMapped === true, "lamba camında ton eşlemesi açık (parlaklık kırpılmaz)");
+ok(cover.emissiveIntensity > 0.4 && cover.emissiveIntensity < 4.6,
+  "lamba camı kısılmış güçle yanıyor", cover.emissiveIntensity);
 
 /* ================= 2d) isim çözümleme ve jant eşleşmesi =================
    Gerçek ihraçlarda adlar tahmin edilemez: "…_Paint_Material1",
@@ -570,26 +609,6 @@ BRANDS.forEach(function (b) {
 
 /* ================= 7) ışık donanımı (huzme/hale yönü) ================= */
 section("7) Işık donanımı: ön yön, görüş açısı ve temizlik");
-
-/* Canvas yalnızca doku üretiminde kullanılıyor: tarayıcısız testte
-   küçük bir taklit yeterli (GPU'ya hiç yüklenmiyor). */
-if (typeof globalThis.document === "undefined") {
-  globalThis.document = {
-    createElement: function () {
-      return {
-        width: 0, height: 0,
-        getContext: function () {
-          return {
-            fillStyle: "",
-            createRadialGradient: function () { return { addColorStop: function () { } }; },
-            createLinearGradient: function () { return { addColorStop: function () { } }; },
-            fillRect: function () { },
-          };
-        },
-      };
-    },
-  };
-}
 
 const rigCar = prepareCar(fakeModel());
 const slot = new THREE.Group();          /* testte carSlot rolünde */

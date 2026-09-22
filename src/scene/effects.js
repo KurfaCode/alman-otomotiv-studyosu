@@ -261,7 +261,10 @@ export function createLighting(car) {
     });
     plan.forEach(function (key, m) {
       m.emissive.setHex(COLORS[key]);
-      m.emissiveIntensity = POWER[key];
+      /* Lamba camları/gövdeleri (car.js: lensCover) kısılmış güçle yanar:
+         yoksa tamponun yarısı bembeyaz bir leke oluyordu. */
+      const scale = m.userData && m.userData.powerScale ? m.userData.powerScale : 1;
+      m.emissiveIntensity = POWER[key] * scale;
     });
     beamLevel = on.high ? 1 : (on.low ? 0.72 : 0);
   }
