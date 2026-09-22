@@ -16,25 +16,112 @@ import { CFG } from "../config.js";
    değiştirilmez, yalnızca parametreleri ayarlanır.
    ============================================================ */
 
-/* Sıra önemli: ilk eşleşen kural kazanır. */
+/* ------------------------------------------------------------
+   İSİM ÇÖZÜMLEYİCİ
+
+   Gerçek dosyalarda materyal ve düğüm adları öngörülemez:
+     "TTAudi_TTRSCoupeIERewardRecycled_2023Paint_Material1"
+     "R:Rim_FL_C7M19_Material_Atlas_Mesh_2_004"
+     "w206_WheelFtL"   "EXT_Carpaint_Inst"   "light_glasss"
+   Düz regex aramaları bu yüzden yanılıyordu: `^paint` Audi'nin boya
+   materyalini kaçırıyor (araba kalibresiz kalıyordu), "windows" VW'nin
+   camı "gövde" sayılıyor (bembeyaz camlar), "R:" öneki Golf'ün jant
+   düğümünü tanınmaz kılıyordu (lastik dönüyor, jant duruyordu).
+
+   Çözüm: adı SÖZCÜKLERE ayır (camelCase + ayraçlar), kuralları sözcük
+   sınırlarıyla eşle. "…23Paint_Material1" içindeki "paint" de,
+   "R:Rim_FL…" içindeki "rim" de böyle bulunur.
+   ------------------------------------------------------------ */
+export function nameTokens(name) {
+  const raw = String(name || "");
+  if (!raw) return [];
+  return raw
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^A-Za-z0-9]+/)
+    .filter(Boolean)
+    .map(function (t) { return t.toLowerCase(); });
+}
+
+/* Kural eşleşmesi iki biçimde denenir: sözcükler boşlukla ve alt
+   çizgiyle birleşik. Böylece hem " glass " hem "_glasslight_"
+   kalıpları aynı anda çalışır. */
+function textForm(name) {
+  const t = nameTokens(name);
+  return " " + t.join(" ") + " _" + t.join("_") + "_";
+}
+
+const W_HEAD = "(?:^|[\\s_])";      /* sözcük başı */
+const W_TAIL = "(?:$|[\\s_])";      /* sözcük sonu */
+/* Sözcüğün TAMAMI (eşanlamlı liste) */
+function words(stems) {
+  return new RegExp(W_HEAD + "(?:" + stems.join("|") + ")" + W_TAIL);
+}
+/* Sözcüğün BAŞI (ek alabilir: glass → glasss, light → lighta) */
+function wordsStart(stems) {
+  return new RegExp(W_HEAD + "(?:" + stems.join("|") + ")\\w*" + W_TAIL);
+}
+
+/* Sıra önemli: ilk eşleşen kural kazanır.
+   "lens": lamba camı/lensi — hangi uçta olduğu İSİMDEN değil KONUMDAN
+   bulunur (aşağıda). "glass" ise camdır (pencere), lamba değildir. */
 const KIND_RULES = [
-  ["signalL",  /leftflash|blinker_l/],
-  ["signalR",  /rightflash|blinker_r/],
-  ["reverse",  /reverese|reverse|rueckfahr/],
-  ["brake",    /w206_red|shader_brake|brake_light|bremslicht/],
-  ["high",     /highbeam|fernlicht/],
-  ["low",      /lowbeam|abblend/],
-  ["drl",      /drl_|drl$|tagfahr/],
-  ["glow",     /lights_global|lights_29|lights_13|vehiclelights/],
-  ["glass",    /glass|scheibe|windshield|fenster/],
-  /* "interior" adı geçen materyaller (Sketchfab ihracı: InteriorA_Material1)
-     iç mekân grubuna girer; karbon parçalar ise ayrı bir sınıftır. */
-  ["interior", /leather|leder|gauges|screen|burmester|airbag|key_|simbs|symbols|speakers|fabric|vinyl|plast|interior|_int\b|w206_59|blue2?$/],
-  ["trim",     /carbon|kevlar/],
-  ["tyre",     /^tyre|^tire|reifen|side wall/],
-  ["rim",      /^rim$|^steel$|jante|esr_cs1|wheel brake disk|clipper|logo|badge|lettering|chrome|mirror|metallic|trim|grille|grill/],
-  ["paint",    /w206_paint|w206_color|etk800|karosserie|car ?paint|autolack|^paint|coloured/],
+  ["signalL",  words(["leftflash", "blinker_l"])],
+  ["signalR",  words(["rightflash", "blinker_r"])],
+  ["reverse",  words(["reverse", "reverese", "rueckfahr", "backup"])],
+  ["brake",    words(["w206_red", "shader_brake", "brake_light", "bremslicht"])],
+  ["high",     wordsStart(["highbeam", "fernlicht"])],
+  ["low",      wordsStart(["lowbeam", "abblend"])],
+  ["drl",      words(["drl", "tagfahrlicht"])],
+  ["glow",     wordsStart(["lights_", "lightglob", "vehiclelight"])],
+  ["lens",     wordsStart(["lens", "light", "lamp", "leuchte", "scheinwerfer", "beam", "reflector", "glasslens", "lightglass", "glasslight", "glass_emissive", "emissive_glass", "red_glass"])],
+  ["glass",    wordsStart(["glass", "window", "windscreen", "windshield", "scheibe", "fenster", "verre", "cristal"])],
+  /* İç mekân: deri, ekran, koltuk, dikiş, hoparlör… */
+  ["interior", wordsStart(["leather", "leder", "gauge", "screen", "burmester", "airbag", "simbs", "symbols", "speaker", "fabric", "vinyl", "plast", "interior", "int", "carpet", "costura", "seam", "display"])],
+  ["trim",     wordsStart(["carbon", "kevlar"])],
+  ["tyre",     wordsStart(["tyre", "tire", "reifen", "pneu", "llanta", "lastik"])],
+  ["rim",      wordsStart(["rim", "jante", "felge", "esr", "cs1", "chrome", "metallic", "grille", "grill", "logo", "badge", "lettering", "mirror", "clipper", "caliper", "spoke", "trim"])],
+  ["paint",    wordsStart(["paint", "carpaint", "karosserie", "autolack", "coloured", "colored", "etk800", "w206_color"])],
 ];
+
+/* Bir adı kural tablosundan geçirir; hiçbiri tutmazsa "body". */
+export function classifyKind(name) {
+  const text = textForm(name);
+  for (let i = 0; i < KIND_RULES.length; i++) {
+    if (KIND_RULES[i][1].test(text)) return KIND_RULES[i][0];
+  }
+  return "body";
+}
+
+/* ---------------- jant/lastik sözlüğü ----------------
+   Tekerlek parçası adları: Wheel_FL, 3DWheel_Front_L, Rim_FL_C7M19,
+   Tire_FR_C7M_Tires, M_Rim_Main_Max… Direksiyon/koltuk uyarıları
+   dışlanır, çünkü "Artificial leather for wheel" = direksiyondur. */
+/* Tek harflik önek serbest: Golf'ün düğümleri "RRim_FL_C7M19",
+   "RTire_FR_C7M_Tires" biçiminde gelir (R = Forza'nın önek işareti).
+   Aksi hâlde jant düğümü tanınmaz ve lastik dönerken jant durur. */
+const WHEEL_WORD = /^(?:[rlbfmn]?)(?:wheels?|rims?|tyres?|tires?|reifen|felge|jantes?|jant|llanta|cerchio|pneu|lastik)\w*$/;
+const WHEEL_BURIED = /wheel/;                       /* 3dWheel1, Wheel1A gibi gömülü adlar */
+const WHEEL_MAT = /^(?:esr|cs1|rims?|wheels?|tyres?|tires?|jante|felge)\w*$/;
+/* Önek serbest olunca gövde parçaları da eşleşebilir: "trim", "brim"… */
+const NOT_WHEEL = /^(?:trim|trims|brims?|primes?|primer|crimes?|grimes?)$/;
+const STEERING_WORD = /steering|direksiyon|lenkrad|leather|leder|seat|koltuk|sitz/;
+
+function wheelish(name) {
+  const toks = nameTokens(name);
+  if (!toks.length) return false;
+  if (toks.some(function (t) { return STEERING_WORD.test(t); })) return false;
+  return toks.some(function (t) {
+    return !NOT_WHEEL.test(t) && (WHEEL_WORD.test(t) || WHEEL_BURIED.test(t));
+  });
+}
+
+function wheelishMaterial(name) {
+  const toks = nameTokens(name);
+  if (!toks.length) return false;
+  return toks.some(function (t) {
+    return !NOT_WHEEL.test(t) && (WHEEL_WORD.test(t) || WHEEL_MAT.test(t) || WHEEL_BURIED.test(t));
+  });
+}
 
 /* İsimsiz modeller (Sketchfab/FBX ihracı) materyallerini "TEX.014"
    gibi opak adlarla taşır: isim eşleşmesi hiç tutmaz ve ne far ne stop
@@ -188,7 +275,10 @@ function redEndHint(scene3d, center, size, axisX) {
      • cam/jant/lastik/iç mekân grubuna düşmüş mesh'e dokunulmaz
    Dönüş: far grubuna yazılacak klon materyal ya da null. */
 const LENS_NAME = /light|lamp|leuchte|scheinwerfer|beam/;
-const GLASS_NAME = /glass|window|scheibe|fenster|windshield/;
+const GLASS_NAME = /glass|window|scheibe|fenster|windshield|windscreen/;
+/* "light_glasss", "glass_light", "EXT_Glass_Emissive_Front": cam
+   sözcüğü taşır ama CAM DEĞİL, lamba camıdır → bölünebilir. */
+const LENS_GLASS_NAME = /light\w*glass|glass\w*light|glass\w*emissive|emissive\w*glass|red_glass/;
 
 function isGlassPart(mesh, parts) {
   const lists = [parts.glass, parts.tyre, parts.rim, parts.interior];
@@ -198,9 +288,16 @@ function isGlassPart(mesh, parts) {
   return false;
 }
 
+/* Lamba camı adı mı? (bölmeye değer mi sorusunun ilk kapısı) */
+function isLensMaterialName(name) {
+  const nm = String(name || "").toLowerCase();
+  if (!LENS_NAME.test(nm)) return false;
+  if (GLASS_NAME.test(nm) && !LENS_GLASS_NAME.test(nm)) return false;
+  return true;
+}
+
 function splitFrontLens(mesh, mat, parts, center, size) {
-  const nm = String(mat.name || "").toLowerCase();
-  if (!LENS_NAME.test(nm) || GLASS_NAME.test(nm)) return null;
+  if (!isLensMaterialName(mat.name || "")) return null;
   if (isGlassPart(mesh, parts)) return null;
 
   const geo = mesh.geometry;
@@ -248,12 +345,20 @@ function splitFrontLens(mesh, mat, parts, center, size) {
 /* Işıkları GEOMETRİDEN bulur: isimler işe yaramadığında (Sketchfab
    ihracı "TEX.014" gibi opak adlar) materyal özellikleri + konum konuşur.
    Çağrıldığında araba çoktan +Z'ye dönmüştür: +Z = ön, +X = sağ. */
-function classifyLightsByGeometry(scene3d, parts, center, size) {
+function classifyLightsByGeometry(scene3d, parts, kindOf, center, size, staged, full) {
   const half = Math.max(1e-4, size.z / 2);
   const widthHalf = Math.max(1e-4, size.x / 2);
+  /* Gerçek lamba UÇLARDA durur. Eşik gevşek tutulunca ön panel /
+     gösterge ekranı (VW: Display_1, Maybach panosu) far sanılıp
+     yanıyordu; gövde yarısının %55'i hem farı hem stopu rahat yakalar. */
+  const endRatio = 0.55;
+
+  const stagedList = staged || [];
+  function isStaged(m) { return stagedList.indexOf(m) >= 0; }
 
   const known = new Map();
   Object.keys(parts.lights).forEach(function (k) {
+    if (k === "lens") return;              /* toplama alanı kural saymaz */
     parts.lights[k].forEach(function (m) { known.set(m, k); });
   });
 
@@ -270,29 +375,85 @@ function classifyLightsByGeometry(scene3d, parts, center, size) {
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (let i = 0; i < mats.length; i++) {
       const m = mats[i];
-      if (!m || known.has(m)) continue;
+      if (!m) continue;
       const lit = !!m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05;
-      if (!lit && !isLensLike(m)) continue;
-      if (wide && !lit) {
-        /* gövde boyunca uzanan tek lamba gövdesi: ön parçası ayrılır */
+      if (!isStaged(m)) {
+        if (known.has(m)) continue;
+        if (!full) continue;          /* adıyla lamba bulunduysa ekstra tarama yok */
+        /* Sınıflandırılmış parçalar lamba sayılmaz: jant, lastik, krom,
+           cam, iç mekân. Bu süzgeç olmadan Porsche'nin EXT_RIM ve
+           EXT_Windows materyalleri "far" olup jantlar/camlar yanıyordu. */
+        const kind = kindOf ? kindOf.get(m) : "body";
+        if (kind && kind !== "body" && kind !== "lens") continue;
+        if (!lit && !isLensLike(m)) continue;
+        if (wide && !lit) {
+          /* gövde boyunca uzanan tek lamba gövdesi: ön parçası ayrılır */
+          const frontMat = splitFrontLens(o, m, parts, center, size);
+          if (frontMat) recs.push({ m: frontMat, mesh: o, z: half * 0.6, x: c.x - center.x, lit: false, front: true });
+          continue;
+        }
+      } else if (wide && !lit) {
+        /* Lamba camı gövde boyunca uzanıyorsa ön parçası ayrılır. */
         const frontMat = splitFrontLens(o, m, parts, center, size);
-        if (frontMat) recs.push({ m: frontMat, mesh: o, z: half * 0.6, x: c.x - center.x, lit: false, front: true });
-        continue;
+        if (frontMat) {
+          recs.push({ m: frontMat, mesh: o, z: half * 0.6, x: c.x - center.x, lit: false, front: true });
+          continue;
+        }
       }
       recs.push({ m: m, mesh: o, z: c.z - center.z, x: c.x - center.x, lit: lit });
     }
   });
   if (!recs.length) return;
 
+  /* Aynı materyal iki UÇTA birden kullanılıyorsa (VW'nin "Glow"u, Porsche
+     LED şeritleri) tek grupla yetinmek yanlış: "Far"a basınca arka lamba
+     da beyaz yanardı. O yüzden materyal, o mesh için KOPYALANIR ve
+     yalnızca bu uçtaki parça kopyayı kullanır. */
+  const FRONT_KEYS = { low: true, high: true, drl: true };
+  function endOf(key) { return FRONT_KEYS[key] ? 1 : -1; }
+  const endsOf = new Map();              /* materyal → hangi uçlara yazıldı */
+  const cloneCache = new Map();          /* materyal → { 1: kopya, -1: kopya } */
+
   function add(rec, key) {
-    if (parts.lights[key].indexOf(rec.m) >= 0) return;
-    parts.lights[key].push(rec.m);
+    const end = endOf(key);
+    let m = rec.m;
+    const used = endsOf.get(m);
+    if (used && used.has(-end)) {
+      /* Aynı uç için tek kopya yeter: dört mesh için dört kopya
+         çıkarmak materyal sayısını gereksiz şişirirdi. */
+      let shelf = cloneCache.get(m);
+      if (!shelf) { shelf = {}; cloneCache.set(m, shelf); }
+      let clone = shelf[end];
+      const fresh = !clone;
+      if (fresh) {
+        clone = m.clone();
+        clone.name = (m.name || "lens") + (end > 0 ? "::front" : "::rear");
+        shelf[end] = clone;
+      }
+      const mesh = rec.mesh;
+      if (mesh && mesh.material) {
+        if (Array.isArray(mesh.material)) {
+          const arr = mesh.material.slice();
+          for (let i = 0; i < arr.length; i++) if (arr[i] === m) arr[i] = clone;
+          mesh.material = arr;
+        } else if (mesh.material === m) {
+          mesh.material = clone;
+        }
+      }
+      if (fresh && kindOf) kindOf.set(clone, "lens");
+      m = clone;
+      rec.m = clone;
+    }
+    if (!endsOf.has(m)) endsOf.set(m, new Set());
+    endsOf.get(m).add(end);
+    if (parts.lights[key].indexOf(m) >= 0) return;
+    parts.lights[key].push(m);
     parts.lightMeshes[key].push(rec.mesh);
   }
 
   recs.forEach(function (r) {
-    const frontOnly = r.front === true || r.z > half * 0.20;
-    const rearOnly = r.z < -half * 0.20;
+    const frontOnly = r.front === true || r.z > half * endRatio;
+    const rearOnly = !r.front && r.z < -half * endRatio;
     if (!frontOnly && !rearOnly) return;             /* ortada: dokunma */
     const red = r.lit && REDDISH(r.m.emissive);
     if (frontOnly) {
@@ -493,11 +654,14 @@ export function prepareCar(scene3d) {
   /* lights: MATERYAL listesi (ışık kontrolü materyalde yapılır).
      lightMeshes: aynı grupların mesh listesi (kutu/yön hesabı için).
      Çoklu materyalli tek mesh'lerde (Audi, VW, Porsche) bu ayrım
-     şart: yoksa krom ve lastik de beraberinde yanardı. */
+     şart: yoksa krom ve lastik de beraberinde yanardı.
+     "lens" grubu bir TOPLAMA ALANIDIR: lamba camı olduğu anlaşılan ama
+     hangi uçta durduğu isimden bilinmeyen materyaller önce buraya girer,
+     sonra KONUMA göre gerçek gruplara dağıtılır (aşağıda). */
   const parts = {
     paint: [], glass: [], rim: [], tyre: [], interior: [], body: [],
-    lights: { low: [], high: [], drl: [], glow: [], brake: [], reverse: [], signalL: [], signalR: [] },
-    lightMeshes: { low: [], high: [], drl: [], glow: [], brake: [], reverse: [], signalL: [], signalR: [] },
+    lights: { low: [], high: [], drl: [], glow: [], brake: [], reverse: [], signalL: [], signalR: [], lens: [] },
+    lightMeshes: { low: [], high: [], drl: [], glow: [], brake: [], reverse: [], signalL: [], signalR: [], lens: [] },
   };
   const kindOfMaterial = new Map();
 
@@ -506,11 +670,7 @@ export function prepareCar(scene3d) {
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     mats.forEach(function (m) {
       if (kindOfMaterial.has(m)) return;
-      const nm = (m.name || "").toLowerCase();
-      let kind = "body";
-      for (let i = 0; i < KIND_RULES.length; i++) {
-        if (KIND_RULES[i][1].test(nm)) { kind = KIND_RULES[i][0]; break; }
-      }
+      const kind = classifyKind(m.name || "");
       kindOfMaterial.set(m, kind);
       if (parts.lights[kind]) {
         parts.lights[kind].push(m);
@@ -534,21 +694,36 @@ export function prepareCar(scene3d) {
   const front = detectFront(parts, carCenter, carSize, scene3d) || 1;
   outer.rotation.y = axisX ? -Math.atan2(front, 0) : -Math.atan2(0, front);
 
-  /* ---- isimsiz modeller: geometriden far/stop sezgisi ----
-     İsim eşleşmesi hiç tutmadıysa (BMW M5 gibi TEX.xx materyalli
-     ihracılar) konumdan bulunur; bulunanlar aynı sınıflara yazılır.
+  /* ---- lamba camları ve isimsiz modeller: geometriden sezgi ----
+     İki durumda gerekir:
+       • adıyla hiç lamba bulunamadı (BMW M5, Maybach: "TEX.010",
+         "Mphong3SG1") → TAM tarama: konum + parlaklık konuşur
+       • isimden "lens" çıkan ama hangi uçta durduğu bilinmeyen lamba
+         camları ("glass_light", "light_glasss", "red_glass") →
+         yalnızca onlar konuma göre dağıtılır
      Bu adım DÖNÜŞTEN SONRA çalışır: +Z = ön, +X = sağ. */
-  if (!parts.lights.low.length && !parts.lights.brake.length) {
+  const staged = parts.lights.lens.slice();
+  const fullScan = !parts.lights.low.length && !parts.lights.high.length && !parts.lights.drl.length &&
+    !parts.lights.brake.length && !parts.lights.reverse.length &&
+    !parts.lights.signalL.length && !parts.lights.signalR.length;
+  if (fullScan || staged.length) {
     outer.updateMatrixWorld(true);
     const geoBox = visibleBox(outer);
     if (!geoBox.isEmpty()) {
       classifyLightsByGeometry(
-        scene3d, parts,
+        scene3d, parts, kindOfMaterial,
         geoBox.getCenter(new THREE.Vector3()),
-        geoBox.getSize(new THREE.Vector3())
+        geoBox.getSize(new THREE.Vector3()),
+        staged, fullScan
       );
     }
   }
+  /* Toplama alanı işini bitirdi. Dağıtılamayanlar (iki uçta da
+     olmayan lamba camları) hiçbir gruba yazılmaz: dokunulmayınca
+     modelin kendi görünümü korunur. Alan tamamen silinir ki
+     kalibrasyon onları "lamba" sanmasın. */
+  delete parts.lights.lens;
+  delete parts.lightMeshes.lens;
 
   /* ---- materyal kalibrasyonu (sınıf değiştirmeden) ---- */
   const materials = [];
@@ -623,15 +798,16 @@ export function prepareCar(scene3d) {
   outer.updateMatrixWorld(true);
   const carSpan = Math.max(carSize.x, carSize.z) || 1;
   scene3d.traverse(function (o) {
-    const nm = (o.name || "").toLowerCase();
-    if (/brake|disc|disk|caliper|clipper/.test(nm)) return;
-    /* Jant düğümü adı "Tire_108" ya da "esr cs1 gloss black_109"
-       olabilir: ad tutmuyorsa altındaki jant/lastik materyaline bakarız.
-       Yanlışlıkla tüm gövdeyi jant sanmamak için parça boyutu da
-       sınırlanır (aksi hâlde araba kendi etrafında dönerdi). */
-    /* "rim" tek başına aranmaz: "trim" ve "carpaint_trim" de eşleşiyordu
-       ve karbon ön lip jant sanılıyordu. Ayraç şartı koşulur. */
-    let named = /wheel|tire|tyre|reifen|jant|felge|(^|[_\-.\/])rims?([_\-.\/0-9]|$)/.test(nm);
+    const toks = nameTokens(o.name || "");
+    /* Fren parçaları tekerlekle birlikte DÖNMEZ (kaliper sabittir):
+       karışıklık olmasın diye hiç aday olmazlar. */
+    if (toks.some(function (t) { return /^(brakes?|discs?|disks?|rotors?|calipers?|clippers?)$/.test(t); })) return;
+    /* Tekerlek parçası adları: Wheel_FL, 3DWheel_Front_L, Rim_FL_C7M19,
+       Tire_FR_C7M_Tires, esr cs1 gloss black… Golf'te olduğu gibi LASTİK
+       ve JANT AYRI düğümlerse ikisi de aday olmalı; yoksa lastik döner,
+       jant yerinde kalır (bildirilen hata). Ad tutmuyorsa altındaki
+       jant/lastik MATERYALİNE bakılır. */
+    let named = wheelish(o.name || "");
     const world = new THREE.Box3().setFromObject(o);
     if (world.isEmpty()) return;
     const center = world.getCenter(new THREE.Vector3());
@@ -650,18 +826,27 @@ export function prepareCar(scene3d) {
         if (named || !c.isMesh || !c.material) return;
         const mats = Array.isArray(c.material) ? c.material : [c.material];
         mats.forEach(function (m) {
-          if (/tire_shader|tyre|reifen|^rim|wheel|jante|felge|esr_cs1|tire/.test((m.name || "").toLowerCase())) named = true;
+          if (m && wheelishMaterial(m.name)) named = true;
         });
       });
       if (!named) return;
     }
 
+    /* Tekerlek YUVARLAKTIR: en büyük iki kenarı birbirine yakın olmalı.
+       "Wheel arch" kaplaması, marşpiyel gibi uzun "wheel" adlı parçalar
+       bu testte elenir — eskiden adı tutan her parça dönüyordu. */
+    const dims = [ws.x, ws.y, ws.z].sort(function (a, b) { return a - b; });
+    if (dims[2] > 1e-4 && Math.abs(dims[1] - dims[2]) > dims[2] * 0.45) return;
+
     /* Kabin eleme kuralı: "wheel" adlı KOLTUK/DEKSİYON parçaları (Audi:
        "Artificial leather for wheel" = direksiyon) tabandan çok yukarıda
-       durur. Gerçek tekerleğin merkezi tabana yarıçap kadar yakındır;
-       bunun üzerinde kalan adaylar (direksiyon, koltuk) elenir. */
+       durur. Sınır GEVŞEKTİR: jant lastiğin İÇİNDE oturur, yarıçapı
+       lastiğinkinden küçük olduğu için sıkı bir "yarıçap kadar yüksek"
+       kuralı gerçek jantları da eliyordu (Golf'te tam bu oluyordu).
+       Kesin ölçü aşağıdaki "arabanın alt yarısı" şartıdır. */
     const centerY = center.y - (carCenter.y - carSize.y / 2);   /* tabana göre yükseklik */
-    if (radius > 1e-3 && centerY > radius * 1.6) return;
+    if (radius > 1e-3 && centerY > radius * 2.5) return;
+    if (carSize.y > 1e-3 && centerY > carSize.y * 0.55) return;  /* tekerlek alt yarıda durur */
 
     const local = localBox(o);
     let axis = new THREE.Vector3(0, 0, 1);

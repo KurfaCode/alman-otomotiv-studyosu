@@ -70,9 +70,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "W206 — Altıncı Nesil", d: "1982'de <b>W201 (190)</b> ile başlayan kompakt sınıf, 1993'ten beri <b>C-Serisi</b> adını taşıyor. 2021'de çıkan <b>W206</b>, markanın en çok satan model ailesinin altıncı nesli." },
-        { t: "1886 — İlk Otomobil", d: "<b>Carl Benz</b>, Mannheim'da Patent-Motorwagen ile dünyanın ilk patentli otomobilini (DRP 37435) üretti. Otomobilin tarihi bu belgeyle başlar." },
-        { t: "Nerede Üretiliyor?", d: "W206, Almanya'da <b>Bremen</b> ve Çin'de Pekin'de üretilir. 1993'ten bu yana <b>11 milyondan fazla</b> C-Serisi satıldı." },
+        { t: "1886 — İki Atölye", d: "<b>Carl Benz</b> 1886'da Mannheim'da Patent-Motorwagen için <b>DRP 37435</b> patentini aldı; aynı yıl <b>Gottlieb Daimler</b> Cannstatt'ta motorlu arabasını yaptı. Otomobilin tarihi bu iki atölyede başladı." },
+        { t: "1926 — Yıldız Doğuyor", d: "<b>Daimler</b> ve <b>Benz</b> 1926'da birleşip Daimler-Benz'i kurdu. Amblemdeki <b>üç köşeli yıldız</b>, 1909'dan beri “karada, denizde, havada motor gücü” anlamına gelir." },
+        { t: "Adı Nereden Geliyor?", d: "Markanın adı bir müşterinin kızından gelir: <b>Emil Jellinek</b>, Daimler'den aldığı araçlara kızı <b>Mercedes</b>'in adını yazdırdı. 1901 <b>Mercedes 35 PS</b> ilk modern otomobil sayılır." },
       ],
       tasarim: [
         { t: "Sensual Purity", d: "Mercedes'in 2009'dan beri kullandığı tasarım dili: gereksiz çizgi yok. W206'da <b>uzun kaput, kısa bagaj</b> ve geriye kaymış kabin oranı korunur." },
@@ -130,9 +130,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "1984 — E28 M5", d: "M5, <b>1984</b>'te E28 5 Serisi gövdesine M1'in motoru konarak doğdu: dört kapılı bir yarış otomobili. <b>Süper sedan</b> sınıfını BMW icat etti." },
-        { t: "M GmbH — 1972", d: "BMW'nin yarış bölümü olarak kuruldu; M1, E30 M3 ve E28 M5 ile pist teknolojisini sokak otomobiline taşıdı. <b>M</b> harfi Motorsport demek." },
-        { t: "F90 — Dört Çekişli İlk M5", d: "<b>2018</b>'de çıkan F90, M5 tarihinde <b>M xDrive</b> ile dört çekişe geçen ilk nesil. Saf sürüş isteyene 2WD modu hâlâ duruyor." },
+        { t: "1916 — Uçak Motorları", d: "BMW, 7 Mart 1916'da Münih'te <b>uçak motoru</b> üretmek için kuruldu. Amblemdeki mavi-beyaz Bavyera'nın renkleridir (pervane değil). Motosiklet 1923'te, otomobil 1928'de geldi." },
+        { t: "1959 — Kurtaran Nesil", d: "BMW 1959'da neredeyse Mercedes'e satılıyordu; <b>Neue Klasse</b> ailesi (1962 <b>1500</b>) markayı kurtardı. Bugünkü 3 ve 5 Serisi bu sedanların devamı." },
+        { t: "M GmbH — 1972", d: "Yarış bölümü <b>1972</b>'de kuruldu; <b>E30 M3</b> ve <b>E28 M5</b> (1984) pist teknolojisini sokağa taşıdı. <b>M</b> harfi Motorsport'un kısaltmasıdır." },
       ],
       tasarim: [
         { t: "Hofmeister Kink", d: "1961'den beri arka cam direğindeki <b>ters kırılma</b>; BMW'nin en kolay tanınan tasarım imzası. F90'da da aynı kırılma var." },
@@ -193,9 +193,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "25 Yılın Vedası", d: "<b>1998</b>'de çıkan TT, üç nesil boyunca markanın tasarım vitrini oldu. <b>2023</b>'te üretimi biten TT için hazırlanan <b>iconic edition</b>, yalnızca Avrupa'da <b>100 adet</b> üretildi." },
-        { t: "Dört Halkanın Doğuşu", d: "<b>1932</b>'de Audi, DKW, Horch ve Wanderer birleşti: <b>Auto Union</b>. Amblemdeki dört halka bu dört markayı temsil eder." },
-        { t: "August Horch", d: "1909'da Horch, kendi soyadını kullanamayınca Latince <b>“Audi”</b> (dinle!) adını seçti. Bugünkü marka bu kelimeden doğdu." },
+        { t: "Dört Halkanın Doğuşu", d: "<b>1932</b>'de Audi, DKW, Horch ve Wanderer birleşti: <b>Auto Union</b>. Amblemdeki dört halka bu dört markayı temsil eder; 1930'ların en güçlü yarış arabaları bu çatıdan çıktı." },
+        { t: "August Horch", d: "1909'da Horch kendi soyadını kullanamayınca Latince <b>“Audi”</b> adını seçti — soyadı Almanca “dinle!” demek. Bugünkü marka bu kelimeden doğdu." },
+        { t: "quattro — 1980", d: "<b>1980</b>'de binek araçta dört çekişi standart hâle getiren <b>quattro</b> ralli pistlerini ve markanın karakterini değiştirdi. “Vorsprung durch Technik” sloganı 1971'den beri aynı fikri anlatır." },
       ],
       tasarim: [
         { t: "Kavis (Dachbogen)", d: "TT'nin imzası <b>tek kavisli tavan</b> çizgisidir: heykeltıraş bir fırça darbesi gibi. iconic edition'da bu hat <b>Nardo Grisi</b> ile vurgulanır." },
@@ -231,7 +231,7 @@ export const BRANDS = [
     short: "Porsche",
     mono: "P",
     emblem: "porsche",
-    presenter: "EGE",
+    presenter: "BİRHAT",
     taglineDE: "Die Legende lebt",
     taglineTR: "Efsane yaşıyor",
     model: "911 GT3 R",
@@ -253,9 +253,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "GT3 R — 992 Nesli", d: "<b>2023</b>'te tanıtılan 911 GT3 R, 992 kasası üzerine kurulu <b>müşteri yarış otomobili</b>: DTM, IMSA ve GT World Challenge gridlerinde özel takımlarla koşar." },
-        { t: "Müşteri Yarışı", d: "Porsche yarış programının kalbi: araç pistte dengelensin diye <b>BoP</b> (performans dengesi) ile yarışır. Le Mans'ta <b>19</b> genel klasman zaferi markanın rekorudur." },
-        { t: "1948 — 356 No.1", d: "Ferry Porsche, Gmünd'de ilk Porsche'yi (356 No.1 Roadster) elle yaptı: 35 PS, 585 kg. “Başlangıçta etrafıma bakındım ama istediğim arabayı bulamadım, o yüzden kendim yaptım.”" },
+        { t: "1931 — Tasarım Ofisi", d: "<b>Ferdinand Porsche</b> 1931'de Stuttgart'ta mühendislik ofisini kurdu; ilk büyük işlerinden biri halk otomobilinin tasarımıydı. Kendi adını taşıyan otomobil için savaşın bitmesi gerekti." },
+        { t: "1948 — 356 No.1", d: "Ferry Porsche, Gmünd'de ilk Porsche'yi (356 No.1 Roadster) elle yaptı: 35 PS, 585 kg. “Etrafıma bakındım ama istediğim arabayı bulamadım, o yüzden kendim yaptım.”" },
+        { t: "Müşteri Yarışı", d: "Porsche yarış programının kalbi müşteri takımlarıdır; araç pistte <b>BoP</b> (performans dengesi) ile yarışır. Le Mans'ta <b>19</b> genel klasman zaferi markanın rekorudur." },
       ],
       tasarim: [
         { t: "Kuğu Boyun Kanat", d: "Arka kanat gövdeye <b>üstten</b> bağlanır (swan neck): kanadın alt yüzeyi temiz kalır, hava akışı bozulmaz. Yere basma kuvveti artar, sürükleme düşer." },
@@ -291,7 +291,7 @@ export const BRANDS = [
     short: "Volkswagen",
     mono: "VW",
     emblem: "vw",
-    presenter: "BİRHAT",
+    presenter: "EGE",
     taglineDE: "Das Auto",
     taglineTR: "Halkın otomobili",
     model: "Golf R Black Edition",
@@ -313,9 +313,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "Halkın Arabası", d: "<b>1937</b>'de kurulan Volkswagen, adını “halkın arabası” fikrinden alır; Beetle ile otomobili geniş kitlelere ulaştırdı." },
-        { t: "Golf Sınıfı", d: "<b>1974</b>'te çıkan Golf, “kompakt hatchback” sınıfını yarattı; bugüne kadar <b>37 milyondan</b> fazla satıldı." },
-        { t: "R Mirası", d: "<b>2002 Golf R32</b> ile başlayan R serisi, VR6'nın sesini bıraktı ama karakterini korudu: 2025 <b>Black Edition</b>, serinin en güçlü Golf R'ı (333 PS)." },
+        { t: "Halkın Arabası", d: "<b>1937</b>'de kurulan Volkswagen, adını “halkın arabası” fikrinden alır. Beetle ile otomobili geniş kitlelere ulaştırdı; bugün dünyanın en büyük üreticilerinden biri." },
+        { t: "1945 — Yeniden Doğuş", d: "Fabrika savaşta yıkıldı; üretimi <b>İngiliz Ordusu'ndan Binbaşı Ivan Hirst</b> yeniden başlattı. Beetle <b>1972</b>'de 15 milyonu aşan üretimiyle Ford T'yi geçti." },
+        { t: "Golf Sınıfı", d: "<b>1974</b>'te çıkan Golf, “kompakt hatchback” sınıfını yarattı; bugüne kadar <b>37 milyondan</b> fazla satıldı. R serisi 2002 <b>R32</b> ile başladı." },
       ],
       tasarim: [
         { t: "Black Edition", d: "Adı gibi: <b>siyah VW arması</b>, siyah R logosu, karartılmış farlar, siyah ayna kapakları ve egzoz uçları. Normalde mavi olan R vurguları bu sürümde siyaha döner." },
@@ -373,9 +373,9 @@ export const BRANDS = [
     ],
     cards: {
       konu: [
-        { t: "Wilhelm Maybach", d: "Daimler'in motorunu tasarlayan, <b>1901 Mercedes 35 PS</b>'e imza atan mühendis. 1909'da kendi firmasını kurdu; adı lüksün simgesi oldu." },
+        { t: "Wilhelm Maybach", d: "Daimler'in motorunu tasarlayan, <b>1901 Mercedes 35 PS</b>'e imza atan mühendis. 1909'da kendi firmasını kurup <b>Zeppelin</b> motorlarını üretti; adı lüksün simgesi oldu." },
         { t: "İki Doğuş, Tek Ad", d: "Maybach 1941'de motor üretimine, 2002'de <b>57/62</b> limuzinleriyle geri döndü. <b>2021 Z223</b>'ten beri Mercedes-Maybach, S-Serisi'nin zirvesi olarak satılıyor." },
-        { t: "S 680 — V12'nin Sonu", d: "Z223'ün amiral gemisi <b>S 680 4MATIC</b>: 6,0 litre <b>V12 biturbo</b>, 612 PS ve 900 Nm. Sıkı emisyon kuralları yüzünden üretilen son büyük V12'lerden." },
+        { t: "Manufaktur İşçiliği", d: "Maybach'ın ayırt edici yeri Sindelfingen'deki <b>Manufaktur</b> atölyesidir: iki renkli boya elle zımparalanır, dikişler tek tek denetlenir. Üretim adedi lüks sınıfın en düşüklerindendir." },
       ],
       tasarim: [
         { t: "İki Renkli Boya", d: "<b>Zweifarblackierung</b>: gövde ustalar tarafından elle zımparalanıp iki renge ayrılır. Renk ayrım çizgisi tek bir milimetre kaymaz." },

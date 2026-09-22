@@ -1,9 +1,14 @@
-# Ham (Blender/Sketchfab) modeller: onlarca MB, repoda tutulmaz.
-# Optimize sürümler models/ altında üretilir (tools/optimize-models.md).
-*.glb
-!models/
-models/*.glb
+# Ham (Blender/Sketchfab) modeller: kökteki onlarca MB'lık dosyalar
+# repoda tutulmaz. Sahneye çıkan OPTİMİZE sürümler models/ altındadır ve
+# bilinçli olarak repoya girer: web (GitHub Pages) yayınında da gerçek
+# arabalar görünsün diye. Üretim adımları: tools/optimize-models.md
+/*.glb
+tools/**/*.glb
 models/_original/
+
+# Tanıtım filmi: sıkıştırılmış sürüm media/intro.mp4 olarak repoda durur,
+# 144 MB'lık ham kayıt durmaz (GitHub tek dosya sınırı: 100 MB).
+/*.mp4
 
 node_modules/
 *.log

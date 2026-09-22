@@ -535,67 +535,78 @@ export function createStage(scene) {
       x.restore();
     }
 
-    /* 5) konuşmacı adları: tek sıra. Aktif olan marka renginde bir
-       kapsülün içinde parlar — uzaktan bakınca kim konuşuyor belli olur.
-       Sıra da canvas'a sığacak şekilde ölçeklenir. */
+    /* 5) konuşmacı şeridi: EŞİT HÜCRELİ TEK SATIR.
+
+       Eski tasarım her adı kendi genişliğinde bir kapsüle koyuyordu;
+       adlar kısa/uzun olduğu için şerit düzensiz, hizasız görünüyordu.
+       Şimdi hepsi aynı boyda ve aynı taban çizgisinde, eşit genişlikte
+       hücrelerde ORTALANIR; aktif konuşmacı marka renginde doldurma +
+       alt çizgi ile işaretlenir. Şerit uzaktan düzgün bir ölçek gibi
+       okunur, marka adının altında eşit boşlukla durur. */
     if (state.names.length) {
       const y = namesY;
       const labels = state.names.map(function (n) { return String(n).toLocaleUpperCase("tr-TR"); });
-      /* Marka adından dar: adlar marka adının altında derli toplu bir
-         şerit gibi durur, duvarı boydan boya kaplamaz. */
-      const maxW = W - 300;
-      let FS = 27;
-      let PX = 19;            /* kapsül içi yatay boşluk */
-      let GAP = 12;
-      let widths = [];
-      let total = 0;
+      const n = labels.length;
+      const bandW = W - 236;                 /* marka adından dar bir şerit */
+      const gap = 10;
+      let FS = 25;
+      let cell = 0;
 
-      function measureRow() {
-        widths = [];
-        total = 0;
+      /* Hücre genişliği eşit; yazı en uzun ada göre bir kez ölçeklenir. */
+      function measure() {
+        cell = (bandW - gap * (n - 1)) / n;
+        let widest = 0;
         x.save();
-        x.font = "500 " + FS + "px 'Segoe UI', Arial, sans-serif";
-        try { x.letterSpacing = "3px"; } catch (e) { }
-        labels.forEach(function (t) {
-          const w = x.measureText(t).width + 4;
-          widths.push(w);
-          total += w + PX * 2;
-        });
+        x.font = "600 " + FS + "px 'Segoe UI', Arial, sans-serif";
+        try { x.letterSpacing = "2px"; } catch (e) { }
+        labels.forEach(function (t) { widest = Math.max(widest, x.measureText(t).width + 4); });
         x.restore();
-        total += GAP * (labels.length - 1);
+        return widest;
       }
 
-      for (let guard = 0; guard < 16; guard++) {
-        measureRow();
-        if (total <= maxW || FS <= 15) break;
-        const k = Math.max(0.7, Math.min(0.95, maxW / total));
-        FS = Math.max(15, Math.round(FS * k));
-        PX = Math.max(9, Math.round(PX * k));
-        GAP = Math.max(6, Math.round(GAP * k));
+      let widest = measure();
+      for (let guard = 0; guard < 14 && widest > cell - 18 && FS > 13; guard++) {
+        FS = Math.max(13, Math.round(FS * Math.max(0.8, (cell - 18) / widest)));
+        widest = measure();
       }
-      measureRow();
 
-      let cx = (W - total) / 2;
-      const pillH = Math.round(FS * 1.48);
+      const pillH = Math.round(FS * 1.72);
+      const x0 = (W - bandW) / 2;
+      x.textBaseline = "middle";
+      x.textAlign = "center";
+
       labels.forEach(function (t, i) {
         const on = i === state.active;
-        const w = widths[i];
+        const cx0 = x0 + i * (cell + gap);
+        const cx = cx0 + cell / 2;
+
+        /* hücre zemini: aktif olanda marka rengi, diğerlerinde çok soluk */
+        x.save();
+        x.globalAlpha = on ? 0.15 : 0.04;
+        x.fillStyle = on ? acc : "#ffffff";
+        roundRect(x, cx0, y - pillH / 2, cell, pillH, 8); x.fill();
+        x.globalAlpha = on ? 0.48 : 0.09;
+        x.strokeStyle = on ? acc : "#ffffff";
+        x.lineWidth = 1;
+        roundRect(x, cx0, y - pillH / 2, cell, pillH, 8); x.stroke();
+        x.restore();
+
+        /* aktif konuşmacı: kapsülün altında marka rengi ince çizgi */
         if (on) {
           x.save();
-          x.globalAlpha = 0.15; x.fillStyle = acc;
-          roundRect(x, cx, y - pillH / 2, w + PX * 2, pillH, pillH / 2); x.fill();
-          x.globalAlpha = 0.5; x.lineWidth = 1; x.strokeStyle = acc;
-          roundRect(x, cx, y - pillH / 2, w + PX * 2, pillH, pillH / 2); x.stroke();
+          x.globalAlpha = 0.9;
+          x.fillStyle = acc;
+          x.fillRect(cx - cell * 0.22, y + pillH / 2 - 1.5, cell * 0.44, 1.6);
           x.restore();
         }
+
         x.save();
         x.font = (on ? "700 " : "500 ") + FS + "px 'Segoe UI', Arial, sans-serif";
-        try { x.letterSpacing = "3px"; } catch (e) { }
+        try { x.letterSpacing = "2px"; } catch (e) { }
         x.textAlign = "center";
-        x.fillStyle = on ? "#ffffff" : "rgba(198,208,226,0.34)";
-        x.fillText(t, cx + PX + w / 2, y);
+        x.fillStyle = on ? "#ffffff" : "rgba(198,208,226,0.30)";
+        x.fillText(t, cx, y + 0.5);
         x.restore();
-        cx += w + PX * 2 + GAP;
       });
     }
     backTex.needsUpdate = true;

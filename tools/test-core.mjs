@@ -16,7 +16,7 @@
 
 import * as THREE from "../vendor/three/three.module.js";
 import { CFG, level as levelOf, guessStartLevel } from "../src/config.js";
-import { prepareCar } from "../src/scene/car.js";
+import { prepareCar, classifyKind } from "../src/scene/car.js";
 import { buildConceptCar } from "../src/scene/concept.js";
 import { computeAnchors } from "../src/scene/focus.js";
 import { createMonitor } from "../src/perf/monitor.js";
@@ -269,6 +269,149 @@ let splitGroups = null;
   if (o.isMesh && o.material && Array.isArray(o.material)) splitGroups = o.geometry.groups.length;
 });
 ok(splitGroups === 2, "bölünen mesh iki gruba ayrıldı (ön / geri kalan)", splitGroups);
+
+/* ================= 2d) isim çözümleme ve jant eşleşmesi =================
+   Gerçek ihraçlarda adlar tahmin edilemez: "…_Paint_Material1",
+   "RRim_FL_C7M19", "windows", "light_glasss". Bu testler bildirilen
+   üç hatayı kilitler: Audi'nin kalibresiz boyası, VW'nin beyaz camları
+   ve Golf'te dönmeyen jant. */
+section("2d) İsim çözümleme (gerçek ihraç adları)");
+ok(classifyKind("TTAudi_TTRSCoupeIERewardRecycled_2023Paint_Material1") === "paint",
+  "Audi'nin \"…_Paint_Material1\" materyali boya sayıldı",
+  classifyKind("TTAudi_TTRSCoupeIERewardRecycled_2023Paint_Material1"));
+ok(classifyKind("Coloured_Material1") === "paint", "ikincil boya (\"Coloured\") boya grubunda");
+ok(classifyKind("EXT_Carpaint_Inst") === "paint", "camelCase boya adı bulundu", classifyKind("EXT_Carpaint_Inst"));
+ok(classifyKind("windows") === "glass" && classifyKind("WindowA_Material1") === "glass",
+  "VW/Audi camları cam sayıldı (bembeyaz camlar bitti)");
+ok(classifyKind("light_glasss") === "lens" && classifyKind("glass_light") === "lens",
+  "lamba camları lens olarak ayrıldı (pencere değil)");
+ok(classifyKind("GrilleNoAlpha2A_Material1") === "rim" && classifyKind("trim") === "rim",
+  "ızgara/krom parçaları metal grubunda",
+  classifyKind("GrilleNoAlpha2A_Material1") + "/" + classifyKind("trim"));
+ok(classifyKind("Tile_Floor") === "body", "bilinmeyen ad gövdeye düşüyor");
+
+/* Golf'te lastik ve jant AYRI kardeş düğümlerdir (RTire_…, RRim_…):
+   eskiden yalnızca lastik bulunuyor, jant yerinde kalıyordu. */
+function separateWheelModel() {
+  const root = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(190, 100, 440),
+    new THREE.MeshStandardMaterial({ name: "CarPaint" })
+  );
+  body.position.y = 100;
+  root.add(body);
+
+  const tyreGeo = new THREE.CylinderGeometry(40, 40, 30, 16);
+  tyreGeo.rotateZ(Math.PI / 2);
+  const rimGeo = new THREE.CylinderGeometry(22, 22, 32, 10);
+  rimGeo.rotateZ(Math.PI / 2);
+
+  [["FL", 1, 1], ["FR", 1, -1], ["RL", -1, 1], ["RR", -1, -1]].forEach(function (c) {
+    const tyre = new THREE.Mesh(tyreGeo, new THREE.MeshStandardMaterial({ name: "tire" }));
+    tyre.name = "RTire_" + c[0] + "_C7M_Tires_Mesh_1";
+    tyre.position.set(c[2] * 95, 40, c[1] * 150);
+    root.add(tyre);
+
+    /* jantın materyali paylaşılan atlas: ad yüzünden tanınmalı */
+    const rim = new THREE.Mesh(rimGeo, new THREE.MeshStandardMaterial({ name: "atlas" }));
+    rim.name = "RRim_" + c[0] + "_C7M19_Material_Atlas_Mesh_2";
+    rim.position.set(c[2] * 95, 40, c[1] * 150);
+    root.add(rim);
+  });
+
+  /* "Wheel arch" kaplaması: adı tekerlek gibi ama YUVARLAK DEĞİL */
+  const arch = new THREE.Mesh(
+    new THREE.BoxGeometry(120, 12, 60),
+    new THREE.MeshStandardMaterial({ name: "TEX.7" })
+  );
+  arch.name = "WheelArch_Trim_L";
+  arch.position.set(95, 60, 150);
+  root.add(arch);
+
+  const outer = new THREE.Group();
+  outer.add(root);
+  return outer;
+}
+
+function cornerPoints(node) {
+  node.updateWorldMatrix(true, true);
+  const inv = new THREE.Matrix4().copy(node.matrixWorld).invert();
+  const m = new THREE.Matrix4();
+  const local = new THREE.Box3();
+  node.traverse(function (o) {
+    if (!o.isMesh || !o.geometry) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    o.updateWorldMatrix(true, false);
+    m.multiplyMatrices(inv, o.matrixWorld);
+    const b = o.geometry.boundingBox.clone().applyMatrix4(m);
+    if (!b.isEmpty()) local.union(b);
+  });
+  const pts = [];
+  for (let i = 0; i < 8; i++) {
+    pts.push(new THREE.Vector3(
+      i & 1 ? local.max.x : local.min.x,
+      i & 2 ? local.max.y : local.min.y,
+      i & 4 ? local.max.z : local.min.z
+    ).applyMatrix4(node.matrixWorld));
+  }
+  return pts;
+}
+
+section("2e) Golf tipi jant + lastik ayrımı");
+const sepCar = prepareCar(separateWheelModel());
+ok(sepCar.wheels.length === 8, "lastik ve jant ayrı düğümken ikisi de bulundu (4+4)",
+  sepCar.wheels.length + " → " + sepCar.wheels.map(function (w) { return w.node.name.slice(0, 12); }).join(", "));
+ok(!sepCar.wheels.some(function (w) { return /arch/i.test(w.node.name || ""); }),
+  "çamurluk kaplaması jant sayılmadı");
+const sepInst = createWheels(sepCar);
+const sepCorners = sepCar.wheels.map(function (w) { return cornerPoints(w.node); });
+const sepCenters = sepCorners.map(function (p) { return new THREE.Box3().setFromPoints(p).getCenter(new THREE.Vector3()); });
+for (let i = 0; i < 20; i++) sepInst.update(0.05);
+let sepDrift = 0, sepSpinning = 0;
+sepCar.wheels.forEach(function (w, i) {
+  const now = cornerPoints(w.node);
+  const c1 = new THREE.Box3().setFromPoints(now).getCenter(new THREE.Vector3());
+  sepDrift = Math.max(sepDrift, sepCenters[i].distanceTo(c1));
+  let moved = 0;
+  for (let k = 0; k < 8; k++) moved = Math.max(moved, sepCorners[i][k].distanceTo(now[k]));
+  if (moved > 0.01) sepSpinning++;
+});
+ok(sepDrift < 0.005, "sekiz parça da yerinde dönüyor (kayma " + sepDrift.toFixed(4) + " m)");
+ok(sepSpinning === 8, "hem lastik hem jant dönüyor", sepSpinning);
+
+/* ================= 2f) iki uçta paylaşılan lamba materyali =================
+   VW'nin "Glow"u gibi tek materyal hem önde hem arkada kullanılırsa,
+   "Far"a basınca arka lamba da beyaz yanardı. Materyal iki uç için
+   kopyalanmalı. */
+function sharedLensModel() {
+  const root = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(190, 100, 440),
+    new THREE.MeshStandardMaterial({ name: "CarPaint" })
+  );
+  body.position.y = 100;
+  root.add(body);
+
+  const shared = new THREE.MeshStandardMaterial({ name: "Glow", emissive: 0x555555 });
+  const front = new THREE.Mesh(new THREE.BoxGeometry(60, 20, 12), shared);
+  front.position.set(0, 80, 220);
+  root.add(front);
+  const rear = new THREE.Mesh(new THREE.BoxGeometry(60, 20, 12), shared);
+  rear.position.set(0, 80, -220);
+  root.add(rear);
+
+  const outer = new THREE.Group();
+  outer.add(root);
+  return outer;
+}
+
+section("2f) İki uçta paylaşılan lamba materyali");
+const sharedCar = prepareCar(sharedLensModel());
+ok(sharedCar.parts.lights.low.length === 1 && sharedCar.parts.lights.reverse.length === 1,
+  "paylaşılan materyal ön (far) ve arka (geri vites) grubuna yazıldı",
+  "low=" + sharedCar.parts.lights.low.length + " reverse=" + sharedCar.parts.lights.reverse.length);
+ok(sharedCar.parts.lights.low[0] !== sharedCar.parts.lights.reverse[0],
+  "iki uçtaki parça aynı materyali paylaşmıyor (kopyalandı)");
 
 /* ================= 3) konsept maket ================= */
 section("3) Konsept maket (model dosyası yokken)");

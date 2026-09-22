@@ -104,6 +104,10 @@ export function createShell(handlers) {
 
   /* ---- klavye ---- */
   document.addEventListener("keydown", function (e) {
+    /* Giriş kapısı / tanıtım filmi açıkken sahne kısayolları çalışmaz
+       (ok tuşuyla marka değişmesin, R ile dönüş başlamasın). */
+    if (document.body.classList.contains("intro-open")) return;
+    if (document.getElementById("intro-film") && !document.getElementById("intro-film").hidden) return;
     const k = e.key;
     if (k === "ArrowRight") { e.preventDefault(); handlers.next(); }
     else if (k === "ArrowLeft") { e.preventDefault(); handlers.prev(); }

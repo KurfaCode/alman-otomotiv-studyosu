@@ -30,9 +30,12 @@
   position:absolute; right:clamp(12px, 1.2vw, 26px); top:50%; transform:translateY(-50%);
   display:flex; flex-direction:column; align-items:center; gap:7px;
   pointer-events:auto; max-height:calc(100vh - 24px); overflow:hidden;
-  padding:11px 9px; border-radius:22px; border:1px solid var(--line);
-  background:linear-gradient(180deg, rgba(11,15,24,.80), rgba(6,9,15,.66));
-  box-shadow:var(--shadow);
+  padding:9px 7px; border-radius:20px; border:1px solid var(--line);
+  /* Yuvа saydam: sahne sağdan da nefes alır, düğmeler okunur kalır.
+     (backdrop-filter bilinçli olarak yok: zayıf tahtada kare başı
+     maliyeti ikiye katlıyor — saydamlık yalnızca alfa ile verilir.) */
+  background:linear-gradient(180deg, rgba(11,15,24,.42), rgba(6,9,15,.28));
+  box-shadow:0 10px 26px -14px rgba(0,0,0,.7);
 }
 #cats, #tools{ display:flex; flex-direction:column; align-items:center; gap:6px }
 
@@ -161,6 +164,65 @@
   .dict{ left:10px; right:10px; bottom:auto; top:52vh; width:auto }
   #nav{ bottom:8px; gap:6px; flex-wrap:wrap; justify-content:center }
   #fps{ display:none }
+}
+
+/* ---------- giriş kapısı (intro) ve tanıtım filmi ----------
+   z-index sırası: #loader(50) < #intro-film(55) < #fatal(60)
+   Kapı (40) yükleyicinin ALTINDA durur: yükleme bitince görünür. */
+#intro-gate{ position:fixed; inset:0; z-index:46; display:flex; align-items:center; justify-content:center }
+#intro-gate[hidden]{ display:none }
+.gate-backdrop{ position:absolute; inset:0; background:radial-gradient(130% 95% at 50% 42%, rgba(7,10,17,.72), rgba(3,5,9,.94)) }
+.gate-card{
+  position:relative; width:min(640px, 92vw); padding:26px 28px 22px;
+  border-radius:var(--r-lg); text-align:center; pointer-events:auto;
+}
+.gate-kicker{ display:inline-block; font-size:.58em; letter-spacing:.3em; text-transform:uppercase; color:var(--mut) }
+.gate-card h2{ font-size:1.55em; margin:9px 0 7px; letter-spacing:.01em }
+.gate-sub{ color:var(--mut); font-size:.76em; letter-spacing:.06em }
+.gate-note{ margin:13px 0 0; color:#c6cfe0; font-size:.82em; line-height:1.55 }
+.gate-actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:17px }
+.gate-actions .btn{ min-height:54px; padding:0 24px; font-size:.95em; font-weight:700; display:inline-flex; align-items:center; gap:10px }
+.btn.primary{
+  background:var(--accent); border-color:var(--accent); color:#0a0d13;
+  box-shadow:0 14px 34px -16px var(--accent);
+}
+.btn.primary:hover{ filter:brightness(1.07) }
+.btn.primary em{ font-style:normal; font-size:.7em; font-weight:800; letter-spacing:.09em; opacity:.78 }
+.btn.primary b{ font-size:1.2em; line-height:1 }
+.gate-hint{ margin:15px 0 0; color:#8791a4; font-size:.66em; letter-spacing:.04em }
+.gate-hint kbd{
+  font:inherit; font-size:.92em; font-weight:800; color:#c8d0e0;
+  background:rgba(255,255,255,.06); border:1px solid var(--line);
+  border-radius:5px; padding:1px 5px; margin:0 1px;
+}
+/* video oynatılamayan cihazda birincil düğme gizlenir: tek yol kalır */
+.gate-actions.degraded .btn.primary{ display:none }
+
+#intro-film{
+  position:fixed; inset:0; z-index:55; background:#03050a;
+  display:flex; align-items:center; justify-content:center;
+}
+#intro-film[hidden]{ display:none }
+#intro-video{ width:100%; height:100%; object-fit:contain; background:#03050a; outline:none }
+.film-bar{
+  position:absolute; left:0; right:0; bottom:0; padding:14px 18px;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:linear-gradient(0deg, rgba(3,5,9,.92), rgba(3,5,9,0));
+}
+#film-note{ font-size:.7em; letter-spacing:.16em; text-transform:uppercase; color:#a7b1c2 }
+#film-note + .btn kbd{ margin-left:5px }
+
+/* Kapı açıkken sahne kilitli: kısayollar ve sürükleme devre dışı */
+.intro-open #stage{ pointer-events:none }
+.intro-open #ui{ opacity:.25; filter:saturate(.7) }
+
+/* ---------- dar / dikey kapı yerleşimi ---------- */
+@media (max-width:640px){
+  .gate-card{ padding:20px 18px 18px }
+  .gate-card h2{ font-size:1.25em }
+  .gate-actions{ flex-direction:column }
+  .gate-actions .btn{ width:100%; justify-content:center }
+  .gate-hint{ display:none }
 }
 
 /* dokunmatikte hover takılmasın */

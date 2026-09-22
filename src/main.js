@@ -17,6 +17,7 @@ import { createBrandPanel } from "./ui/brandPanel.js";
 import { createFeatureCards } from "./ui/featureCards.js";
 import { createShell } from "./ui/shell.js";
 import { bindDictionary } from "./ui/dict.js";
+import { createIntro } from "./ui/intro.js";
 import { createLeaders } from "./ui/leaders.js";
 
 /* ============================================================
@@ -416,6 +417,48 @@ function diag() {
   return out;
 }
 
+/* ---------------- sinematik tur (intro videosu yoksa) ----------------
+   Okul tahtasında video oynatılamazsa sunum "intro"suz başlamaz:
+   sahne kendi kurgusunu oynatır. Adımlar config.js'te tanımlıdır
+   (marka + kategori + süre); kategori değişimi kamerayı da taşır.
+   Kullanıcı dokunduğu ya da bir tuşa bastığı anda tur durur. */
+function startCinematicTour() {
+  if (app.cinematic) return;
+  const script = (CFG.intro && CFG.intro.tour) || [];
+  if (!script.length) return;
+
+  const timers = [];
+  let step = 0;
+  let stopped = false;
+
+  function cancel(silent) {
+    if (stopped) return;
+    stopped = true;
+    while (timers.length) clearTimeout(timers.pop());
+    window.removeEventListener("pointerdown", onTouch, true);
+    window.removeEventListener("keydown", onTouch, true);
+    app.cinematic = null;
+    if (!silent) app.shell.toast("Sinematik tur durdu", 1600);
+  }
+
+  function onTouch() { cancel(); }
+
+  function next() {
+    if (stopped) return;
+    if (step >= script.length) { cancel(true); return; }
+    const s = script[step++] || {};
+    if (typeof s.brand === "number" && s.brand !== app.index) goTo(s.brand);
+    if (s.cat && s.cat !== app.catId) pickCategory(s.cat);
+    timers.push(setTimeout(next, s.ms || 3000));
+  }
+
+  app.cinematic = { cancel: cancel };
+  window.addEventListener("pointerdown", onTouch, true);
+  window.addEventListener("keydown", onTouch, true);
+  app.shell.toast("Sinematik tanıtım turu · durdurmak için dokun", 3000);
+  next();
+}
+
 /* ---------------- ana döngü ---------------- */
 function frame() {
   app.raf = requestAnimationFrame(frame);
@@ -663,6 +706,17 @@ function init() {
   applyQuality(app.monitor.level, false);
   app.last = performance.now();
   show(true);
+
+  /* Giriş kapısı: "İntro İzle" filmi açar, "Sunumla Devam Et" atlar.
+     Film yoksa/oynatılamazsa sahne sinematik turunu oynatır. */
+  app.introGate = createIntro({
+    onDone: function (mode) {
+      if (mode === "cinematic") startCinematicTour();
+      else app.shell.toast("Sunum hazır · ← → ile markalar arasında geçin", 2600);
+    },
+  });
+  app.introGate.open();
+
   frame();
 
   /* Yükleme ekranı en fazla ~1,4 sn kalır: podyumda zaten konsept maket var,

@@ -99,6 +99,28 @@ export const CFG = {
     minShowMs: 550,
   },
 
+  /* Giriş kapısı (intro). Video yolu değişirse yalnızca burası düzeltilir;
+     dosya yoksa/bozuksa sahne kendi sinematik turunu oynatır (intro.js). */
+  intro: {
+    video: "media/intro.mp4",
+    seconds: 30,
+    /* Sinematik tur adımları: marka dizini + kategori + süre (ms).
+       Kategori odağı kamerayı da taşır (aimAt), yani tur bir kurgu gibi
+       akar; kullanıcı dokununca hemen durur. */
+    tour: [
+      { brand: 0, cat: "konu", ms: 3200 },
+      { brand: 0, cat: "tasarim", ms: 3000 },
+      { brand: 3, cat: "konu", ms: 3000 },
+      { brand: 3, cat: "far", ms: 3000 },
+      { brand: 2, cat: "tasarim", ms: 3000 },
+      { brand: 2, cat: "jant", ms: 3000 },
+      { brand: 4, cat: "motor", ms: 3000 },
+      { brand: 5, cat: "ic", ms: 3200 },
+      { brand: 1, cat: "tasarim", ms: 3000 },
+      { brand: 0, cat: "konu", ms: 2600 },
+    ],
+  },
+
   ui: {
     toastMs: 2400,
     catFadeMs: 170,

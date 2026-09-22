@@ -67,6 +67,31 @@
 
 </div>
 
+<!-- giriş kapısı: tanıtım filmini izle ya da doğrudan sunuma geç -->
+<div id="intro-gate" hidden>
+  <div class="gate-backdrop"></div>
+  <div class="gate-card panel">
+    <span class="gate-kicker">Alman Otomotiv Stüdyosu</span>
+    <h2>Altı Marka · Altı Otomobil</h2>
+    <p class="gate-sub">Mercedes-Benz · BMW · Audi · Porsche · Volkswagen · Maybach</p>
+    <p class="gate-note">Sunumdan önce kısa tanıtım filmini izleyebilir ya da doğrudan sahneye geçebilirsiniz.</p>
+    <div class="gate-actions">
+      <button id="gate-film" class="btn primary" type="button">İntro İzle <em id="gate-film-len">30 sn</em></button>
+      <button id="gate-start" class="btn" type="button">Sunumla Devam Et <b aria-hidden="true">›</b></button>
+    </div>
+    <p class="gate-hint">Kısayollar: <kbd>←</kbd> <kbd>→</kbd> marka · <kbd>R</kbd> dönüş · <kbd>L</kbd> far · <kbd>F</kbd> tam ekran</p>
+  </div>
+</div>
+
+<!-- tanıtım filmi katmanı: video yoksa sahne kendi turunu oynatır -->
+<div id="intro-film" hidden>
+  <video id="intro-video" playsinline preload="auto"></video>
+  <div class="film-bar">
+    <span id="film-note">Tanıtım filmi</span>
+    <button id="film-skip" class="btn tiny ghost" type="button">Geç <kbd>ESC</kbd></button>
+  </div>
+</div>
+
 <div id="loader">
   <div class="loader-inner">
     <div class="mono big">AO</div>

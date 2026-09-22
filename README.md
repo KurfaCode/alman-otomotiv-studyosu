@@ -14,7 +14,22 @@ kartlarını ve kamera odağını değiştirir, alttaki şeritten markalar aras�
   kademesi önce çözünürlüğü/aynayı kısar; cihaz yine zorlanıp en hafif kademeye
   düşerse aynı markanın hafif sürümü (ör. 198k üçgen) kendiliğinden yüklenir.
 
-## Çalıştırma
+## Yayın (internet üzerinden, kurulum gerektirmedir)
+
+Sunum okul tahtasında yalnızca bir adresle açılabilir: **GitHub Pages**
+statik site olarak yayınlanır (yayın dallı `main`, kök dizin).
+
+- Adres: `https://kurfacode.github.io/alman-otomotiv-studyosu/`
+- Yayınlanan içerik: `index.html` + `src/`, `styles/`, `vendor/`, `models/`,
+  `media/intro.mp4`, `tools/` ve `.nojekyll`.
+- Modeller (35 MB) ve sıkıştırılmış tanıtım filmi (28 MB) BİLİNÇLİ olarak
+  repodadır; aksi hâlde yayında yalnızca konsept maketler görünürdü.
+- Güncelleme: değişikliği `main` dalına push etmek yeterlidir, Pages
+  birkaç dakika içinde kendini yeniler. (`git push`)
+- 144 MB'lık ham video kaydı repoda durmaz (GitHub tek dosya sınırı 100 MB);
+  `media/intro.mp4` sıkıştırılmış sürümdür.
+
+## Çalıştırma (yerel)
 
 ```bash
 npm run serve                    # önbelleksiz sunucu → http://localhost:8000/
@@ -45,6 +60,21 @@ kaydet + yenile yeterlidir.
 | `F` | Tam ekran |
 | `D` | Hata ayıklama katmanı (FPS + kalite kademesi) |
 | Fare/dokunma sürükleme | Arabayı döndür; 2,4 sn sonra dönüş kendi kendine sürer |
+
+### Giriş kapısı (intro)
+
+İlk ekranda iki yol vardır:
+
+| Düğme | Ne yapar |
+|---|---|
+| **İntro İzle** | `media/intro.mp4` oynar (30 sn); bitince sunum kaldığı yerden sürer. `I` tuşu da filmi açar. |
+| **Sunumla Devam Et** | Filmi atlar, doğrudan sahneye geçer (`Enter` / `Boşluk` / `ESC`). |
+
+**Garanti kuralı:** video dosyası yoksa, bozuksa ya da cihaz oynatamıyorsa kapı
+kendiliğinden kapanır ve sahne **kendi sinematik turunu** oynatır (markalar ve
+odaklar arasında geçen ~26 sn, `config.js` → `intro.tour`). Yani internet
+olmayan tahtada da sunum introsuz kalmaz. Tur herhangi bir dokunuş/klavye
+hareketiyle hemen durur.
 
 Adres parametreleri: `?debug=1`, `?perf=0|1|2`, `?norefl=1`, `?light=1`, `?brand=bmw`.
 
@@ -129,9 +159,12 @@ Test bunu her marka için zorunlu tutar.
 
 ```bash
 npm run check                 # modül sözdizimi + import yolları + içerik kapsaması
-node tools/test-core.mjs      # 189 birim testi: ölçek/yön/jant/kamera/kalite/içerik
+node tools/test-core.mjs      # 202 birim testi: ölçek/yön/jant/kamera/kalite/içerik
+node tools/diagnose.mjs       # GERÇEK GLB'lerde sınıflandırma + jant dönüş ölçümü
 ```
 
+`tools/diagnose.mjs` her model için "hangi parça hangi gruba düştü, jantlar yerinde
+dönüyor mu" sorusunu ölçerek yanıtlar (kayma 0,000 m + tüm parçalar dönüyor olmalı).
 Model optimizasyonu ve doğrulaması: `tools/optimize-models.md`.
 
 ## Bilinen sınırlar
@@ -146,5 +179,11 @@ Model optimizasyonu ve doğrulaması: `tools/optimize-models.md`.
   materyal gövde boyunca uzanır. `src/scene/car.js` bu yüzeyi ön/arka diye geometriden
   ikiye böler (`splitFrontLens`), böylece "Far" ve "Stop" düğmeleri bu modelde de
   gerçekten çalışır.
-- Modeller `.gitignore`'da: depoyu klonlayan başka bir makinede model dosyalarını elle
-  kopyalamak gerekir (`models/README.md`).
+- Materyal ve parça tanıma **isimden sözcük ayıklayarak** yapılır (`nameTokens`):
+  "…23Paint_Material1" → boya, "RRim_FL_C7M19" → jant, "windows" → cam. Aynı
+  materyal hem önde hem arkada kullanılıyorsa iki uç için kopyalanır, yoksa
+  "Far"a basınca arka lamba da yanardı (`classifyLightsByGeometry`).
+- Arabanın içinde kalan parçalar (jant içindeki göbek, konsol ekranı) lamba
+  sayılmaz: konum eşiği gövde yarısının %55'idir.
+- Modeller artık repoda (35 MB): yayınlanan sürümde de gerçek arabalar vardır.
+  Yalnızca kökteki ham `.glb` dosyaları ve 144 MB'lık ham video kaydı dışarıda kalır.
