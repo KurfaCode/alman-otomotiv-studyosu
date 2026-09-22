@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
 <title>Alman Otomotiv Stüdyosu</title>
+<link rel="icon" href="favicon.ico" />
 <link rel="stylesheet" href="styles/base.css" />
 <link rel="stylesheet" href="styles/layout.css" />
 </head>
@@ -51,6 +52,8 @@
   </div>
 
   <footer id="nav" class="panel">
+    <a href="../#ai" id="btn-back-kurfa" class="btn tiny ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:600;" title="Kurfa Core'a Dön">❮ Kurfa</a>
+    <span class="nav-sep" aria-hidden="true"></span>
     <button id="btn-prev" class="btn icon" type="button" aria-label="Önceki marka" title="Önceki marka (←)">‹</button>
     <div id="dots" class="dots"></div>
     <span id="counter" class="counter">1 / 6</span>
@@ -79,6 +82,22 @@
       <button id="gate-film" class="btn primary" type="button">İntro İzle <em id="gate-film-len">30 sn</em></button>
       <button id="gate-start" class="btn" type="button">Sunumla Devam Et <b aria-hidden="true">›</b></button>
     </div>
+
+    <!-- İntro PIN Doğrulama -->
+    <div id="gate-pin-box" class="gate-pin-box" hidden>
+      <div class="gate-pin-header">
+        <span class="gate-pin-icon">🔒</span>
+        <strong>İntro Güvenlik Girişi</strong>
+      </div>
+      <p class="gate-pin-desc">Tanıtım filmini izlemek için yetkili PIN kodunu giriniz.</p>
+      <div class="gate-pin-inputs">
+        <input type="password" id="gate-pin-input" inputmode="numeric" placeholder="PIN" maxlength="12" autocomplete="off" />
+        <button id="gate-pin-submit" class="btn primary" type="button">Başlat</button>
+        <button id="gate-pin-cancel" class="btn tiny ghost" type="button">İptal</button>
+      </div>
+      <p id="gate-pin-error" class="gate-pin-err" hidden></p>
+    </div>
+
     <p class="gate-hint">Kısayollar: <kbd>←</kbd> <kbd>→</kbd> marka · <kbd>R</kbd> dönüş · <kbd>L</kbd> far · <kbd>F</kbd> tam ekran</p>
   </div>
 </div>

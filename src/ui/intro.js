@@ -22,6 +22,46 @@
 
 import { CFG } from "../config.js";
 
+const INTRO_SALT = "kurfa_core_salt_998";
+const INTRO_HASH = "5d64eeabeec4bdec4e5cb8488b4988430483bf57ba6531a7c6843364b081c754";
+
+async function sha256Hex(str) {
+  if (typeof crypto !== "undefined" && crypto.subtle && typeof TextEncoder !== "undefined") {
+    const enc = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest("SHA-256", enc);
+    return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, "0"); }).join("");
+  }
+  return "";
+}
+
+async function verifyIntroSecurity(pin) {
+  const clean = String(pin || "").trim();
+  if (!clean) return false;
+
+  // 1. Sunucu API doğrulaması (Cloudflare Worker / Vercel)
+  try {
+    const res = await fetch("/api/verify-intro-pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin: clean })
+    });
+    if (res.ok) {
+      const data = await res.json().catch(function () { return {}; });
+      if (data && data.success) return true;
+    }
+  } catch (_) {
+    // Çevrimdışı veya kapalı intranet durumu
+  }
+
+  // 2. Kriptografik tuzlu özet (Plaintext kodda asla barındırılmaz)
+  try {
+    const computed = await sha256Hex(INTRO_SALT + ":" + clean);
+    if (computed === INTRO_HASH) return true;
+  } catch (_) { }
+
+  return false;
+}
+
 function pad2(n) { return (n < 10 ? "0" : "") + n; }
 
 export function createIntro(opts) {
@@ -35,6 +75,13 @@ export function createIntro(opts) {
   const btnSkip = document.getElementById("film-skip");
   const lenEl = document.getElementById("gate-film-len");
 
+  const pinBox = document.getElementById("gate-pin-box");
+  const pinInput = document.getElementById("gate-pin-input");
+  const pinSubmit = document.getElementById("gate-pin-submit");
+  const pinCancel = document.getElementById("gate-pin-cancel");
+  const pinErr = document.getElementById("gate-pin-error");
+  const gateActions = gate ? gate.querySelector(".gate-actions") : null;
+
   const state = { open: false, watching: false, failed: false, opened: 0 };
 
   if (lenEl && CFG.intro && CFG.intro.seconds) lenEl.textContent = CFG.intro.seconds + " sn";
@@ -46,6 +93,7 @@ export function createIntro(opts) {
 
   /* Kapıyı kapat ve sahneye geç. mode: "video" | "skip" | "cinematic" */
   function close(mode) {
+    hidePinPrompt();
     if (film && !film.hidden) stopVideo();
     if (film) film.hidden = true;
     if (gate) gate.hidden = true;
@@ -136,13 +184,97 @@ export function createIntro(opts) {
     next();
   }
 
+  function showPinPrompt() {
+    if (!pinBox) {
+      watch();
+      return;
+    }
+    try {
+      if (sessionStorage.getItem("ao_intro_unlocked") === "1") {
+        watch();
+        return;
+      }
+    } catch (_) {}
+
+    if (gateActions) gateActions.style.display = "none";
+    pinBox.hidden = false;
+    if (pinErr) {
+      pinErr.hidden = true;
+      pinErr.textContent = "";
+    }
+    if (pinInput) {
+      pinInput.value = "";
+      setTimeout(function () {
+        try { pinInput.focus(); } catch (_) {}
+      }, 50);
+    }
+  }
+
+  function hidePinPrompt() {
+    if (pinBox) pinBox.hidden = true;
+    if (gateActions) gateActions.style.display = "";
+    if (pinErr) {
+      pinErr.hidden = true;
+      pinErr.textContent = "";
+    }
+  }
+
+  async function handlePinSubmit() {
+    if (!pinInput) return;
+    const val = pinInput.value.trim();
+    if (!val) {
+      if (pinErr) {
+        pinErr.textContent = "Lütfen PIN kodunu giriniz.";
+        pinErr.hidden = false;
+      }
+      pinInput.focus();
+      return;
+    }
+
+    if (pinSubmit) pinSubmit.disabled = true;
+    if (pinErr) {
+      pinErr.hidden = true;
+      pinErr.textContent = "";
+    }
+
+    const ok = await verifyIntroSecurity(val);
+    if (pinSubmit) pinSubmit.disabled = false;
+
+    if (ok) {
+      try { sessionStorage.setItem("ao_intro_unlocked", "1"); } catch (_) {}
+      hidePinPrompt();
+      watch();
+    } else {
+      if (pinErr) {
+        pinErr.textContent = "Hatalı PIN! Erişim reddedildi.";
+        pinErr.hidden = false;
+      }
+      pinInput.select();
+    }
+  }
+
   function open() {
     if (gate) gate.hidden = false;
     lock(true);
     state.opened = Date.now();
   }
 
-  if (btnFilm) btnFilm.addEventListener("click", watch);
+  if (btnFilm) btnFilm.addEventListener("click", showPinPrompt);
+  if (pinCancel) pinCancel.addEventListener("click", hidePinPrompt);
+  if (pinSubmit) pinSubmit.addEventListener("click", handlePinSubmit);
+  if (pinInput) {
+    pinInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        handlePinSubmit();
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        hidePinPrompt();
+      }
+    });
+  }
   if (btnStart) btnStart.addEventListener("click", function () { close("skip"); });
   if (btnSkip) btnSkip.addEventListener("click", function () { close("skip"); });
   if (video) video.addEventListener("click", function () { close("skip"); });
@@ -152,15 +284,43 @@ export function createIntro(opts) {
      kısayolları (R, L, ok tuşları) çalışmaz. */
   document.addEventListener("keydown", function (e) {
     if (!state.open && !state.watching) return;
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) {
+      return;
+    }
     const k = e.key;
-    if (k === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); close("skip"); return; }
+    if (k === "Escape") {
+      if (pinBox && !pinBox.hidden) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        hidePinPrompt();
+        return;
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      close("skip");
+      return;
+    }
     if (state.watching) {
       /* film oynarken herhangi bir tuş filmi geçer */
       if (k === "Enter" || k === " ") { e.preventDefault(); close("skip"); }
       return;
     }
-    if (k === "Enter" || k === " ") { e.preventDefault(); close("skip"); return; }
-    if (k === "i" || k === "I") { e.preventDefault(); watch(); return; }
+    if (k === "Enter" || k === " ") {
+      if (pinBox && !pinBox.hidden) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        handlePinSubmit();
+        return;
+      }
+      e.preventDefault();
+      close("skip");
+      return;
+    }
+    if (k === "i" || k === "I") {
+      e.preventDefault();
+      showPinPrompt();
+      return;
+    }
     /* diğer tuşlar sahneye gitmesin */
     e.stopImmediatePropagation();
   }, true);
