@@ -90,57 +90,19 @@ export function createShell(handlers) {
   /* ---- tam ekran ---- */
   function toggleFullscreen() {
     try {
-      const getActiveFs = function () {
-        try {
-          return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-        } catch (_) { return null; }
-      };
+      if (window.parent && window.parent !== window && typeof window.parent.toggleCarsFullscreen === "function") {
+        window.parent.toggleCarsFullscreen();
+        return;
+      }
 
-      const getParentFs = function () {
-        try {
-          if (window.parent && window.parent !== window && window.parent.document) {
-            return window.parent.document.fullscreenElement || window.parent.document.webkitFullscreenElement || window.parent.document.mozFullScreenElement || window.parent.document.msFullscreenElement;
-          }
-        } catch (_) {}
-        return null;
-      };
-
-      const active = getActiveFs() || getParentFs();
-
+      const el = document.documentElement;
+      const active = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
       if (!active) {
-        let parentHandled = false;
-        try {
-          if (window.parent && window.parent !== window && window.parent.document) {
-            const modal = window.parent.document.getElementById("carsViewerModal") || window.parent.document.documentElement;
-            const req = modal.requestFullscreen || modal.webkitRequestFullscreen || modal.mozRequestFullScreen || modal.msRequestFullscreen;
-            if (req) {
-              req.call(modal).catch(function () {});
-              parentHandled = true;
-            }
-          }
-        } catch (_) {}
-
-        if (!parentHandled) {
-          const el = document.documentElement;
-          const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-          if (req) req.call(el).catch(function () {});
-        }
+        const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+        if (req) req.call(el).catch(function () {});
       } else {
-        let parentExited = false;
-        try {
-          if (window.parent && window.parent !== window && window.parent.document && getParentFs()) {
-            const exitP = window.parent.document.exitFullscreen || window.parent.document.webkitExitFullscreen || window.parent.document.mozCancelFullScreen || window.parent.document.msExitFullscreen;
-            if (exitP) {
-              exitP.call(window.parent.document).catch(function () {});
-              parentExited = true;
-            }
-          }
-        } catch (_) {}
-
-        if (!parentExited) {
-          const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-          if (exit) exit.call(document).catch(function () {});
-        }
+        const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        if (exit) exit.call(document).catch(function () {});
       }
     } catch (e) { toast("Tam ekran açılamadı."); }
   }
