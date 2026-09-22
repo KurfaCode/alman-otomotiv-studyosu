@@ -633,7 +633,7 @@ function hideGround(root) {
   });
 }
 
-export function prepareCar(scene3d) {
+export function prepareCar(scene3d, brand) {
   const outer = new THREE.Group();      // yön düzeltmesi (ön daima +Z)
   outer.add(scene3d);
 
@@ -763,10 +763,18 @@ export function prepareCar(scene3d) {
            cilalı plastik gibi davranıp stüdyo ışıklarını kaputta sert
            beyaz lekeler hâlinde yansıtıyordu ("dokular saçma"). Gerçek
            boya 0,14–0,32 pürüzlülükte yumuşak bir parlaklık verir. */
-        m.envMapIntensity = 1.05;
+        m.envMapIntensity = 1.15;
         if ("roughness" in m) m.roughness = Math.min(Math.max(m.roughness, 0.14), 0.32);
         if ("metalness" in m) {
           m.metalness = Math.min(Math.max(m.metalness, 0.35), 0.75);
+        }
+        /* Düz/dokusu olmayan gövde boyaları:
+           Özellikle Audi TT RS iconic edition (Nardo Grisi) ve Mercedes C 300
+           modellerinde GLB içinde renk faktörü çok karanlık (0.11) geldiğinde
+           araba simsiyah / dokusuz gibi görünür. Gerçek marka boya rengi atanır. */
+        if (!m.map && brand && brand.paintColor) {
+          m.color = m.color || new THREE.Color();
+          m.color.setHex(brand.paintColor);
         }
       } else if (kind === "rim") {
         m.envMapIntensity = 1.45;

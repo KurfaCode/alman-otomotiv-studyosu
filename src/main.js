@@ -229,7 +229,7 @@ function loadModel(brand, instant) {
       return;
     }
     try {
-      const prepared = prepareCar(gltf.scene);
+      const prepared = prepareCar(gltf.scene, brand);
       const wasConcept = app.car && app.car.concept;
       let tris = 0;
       prepared.object.traverse(function (o) {

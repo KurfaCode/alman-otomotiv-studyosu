@@ -60,6 +60,7 @@ export const BRANDS = [
     founded: "1926",
     accent: "#d4af37",
     accentHex: 0xd4af37,
+    paintColor: 0x5a6068,
     files: ["models/mercedes.glb", "mercedes.glb"],
     lightFiles: ["models/mercedes-light.glb"],
     stats: [
@@ -180,6 +181,7 @@ export const BRANDS = [
     founded: "1909",
     accent: "#e63946",
     accentHex: 0xe63946,
+    paintColor: 0x7c828a,
     /* SIRA ÖNEMLİ: sahnede ilk yüklenen dosya gösterilir. Kök dizindeki
        eski `audi.glb` (Audi RS8 Sport konsepti) listede öne geçtiği için
        panel TT RS derken sahneye o araç çıkıyordu; artık hiç aday değil. */
@@ -303,6 +305,7 @@ export const BRANDS = [
     founded: "1937",
     accent: "#3b82f6",
     accentHex: 0x3b82f6,
+    paintColor: 0x141820,
     files: ["models/vw.glb", "2025_volkswagen_golf_r_black_edition.glb"],
     lightFiles: ["models/vw-light.glb"],
     stats: [
@@ -363,6 +366,7 @@ export const BRANDS = [
     founded: "1909",
     accent: "#d97706",
     accentHex: 0xd97706,
+    paintColor: 0x1f1a22,
     files: ["models/maybach.glb", "2021_mercedes-benz_s-class_maybach.glb"],
     lightFiles: ["models/maybach-light.glb"],
     stats: [
