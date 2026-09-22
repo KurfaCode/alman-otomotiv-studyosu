@@ -1,8 +1,19 @@
 /* ============================================================
-   Kategori rafı (sağ) + özellik kartları (sol).
+   Kategori rafı (sağ) + konu okuyucusu (sol).
 
-   Kart içeriği tamamen veriden gelir: kategori değişince kartlar
-   yeniden kurulur ve kamera ilgili parçaya kayar.
+   Sol sütunun tasarımı \"boğmayacak\" biçimde tek karta indirildi:
+   üç kartın üçü birden yazılmıyor. Üstte kategori başlığı ve
+   adım sayacı, ortada AKTİF konunun tam genişlikte kartı, altta
+   numaralandırılmış bölüm şeridi durur. Böylece aynı metin çok
+   daha rahat okunur ve dar ekranda üçüncü kart kırpılmaz.
+
+   İçerik tamamen veriden gelir: kategori değişince okuyucu yeniden
+   kurulur, seçilen konu kamerayı ilgili parçaya kaydırır.
+
+   Gezinme:
+     adım şeridine tıkla            → o konu
+     kartın kendisine tıkla         → sonraki konu (başa döner)
+     ↑ / ↓ ya da sıradaki tuş       → adım adım
    ============================================================ */
 
 export const GLYPHS = {
@@ -21,10 +32,15 @@ function glyph(name) {
   return GLYPHS[name] || GLYPHS.car;
 }
 
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
 export function createFeatureCards(onPick, onRendered) {
   const catsEl = document.getElementById("cats");
   const cardsEl = document.getElementById("cards");
-  const state = { active: null, categories: [], cards: [] };
+  const state = { active: null, categories: [], cards: [], catId: null, step: 0, glyph: "car" };
+
+  /* okuyucunun canlı parçaları (kart listesi değişince yeniden kurulur) */
+  let ui = null;
 
   function buildCats(categories) {
     state.categories = categories.slice();
@@ -51,60 +67,149 @@ export function createFeatureCards(onPick, onRendered) {
     }
   }
 
+  /* Aktif konuyu çiz. Tek seferde TEK kart gösterilir: sütun boğulmaz,
+     metin tam genişlikte ve kırpılmadan okunur. */
+  function paint(reset) {
+    if (!ui) return;
+    const list = state.cards;
+    if (!list.length) return;
+    const i = Math.max(0, Math.min(list.length - 1, state.step));
+    state.step = i;
+    const card = list[i];
+
+    ui.count.textContent = pad2(i + 1) + " / " + pad2(list.length);
+    ui.fill.style.width = (((i + 1) / list.length) * 100).toFixed(1) + "%";
+
+    for (let k = 0; k < ui.steps.length; k++) {
+      const on = k === i;
+      ui.steps[k].classList.toggle("on", on);
+      if (on) ui.steps[k].setAttribute("aria-current", "true");
+      else ui.steps[k].removeAttribute("aria-current");
+    }
+
+    ui.body.innerHTML = "";
+    const el = document.createElement("article");
+    el.className = "card";
+    el.dataset.anchor = state.catId;              /* kılavuz çizgisi hedefi */
+    el.title = "Sonraki konu";
+    el.style.setProperty("--i", String(i));
+
+    const g = document.createElement("span");
+    g.className = "glyph";
+    g.innerHTML = glyph(state.glyph);
+
+    const body = document.createElement("div");
+    body.className = "card-body";
+    const h = document.createElement("h3");
+    h.textContent = card.t;
+    const p = document.createElement("p");
+    p.innerHTML = card.d;
+    body.appendChild(h);
+    body.appendChild(p);
+
+    const more = document.createElement("span");
+    more.className = "more";
+    more.setAttribute("aria-hidden", "true");
+    more.textContent = "\u203A";
+
+    el.appendChild(g);
+    el.appendChild(body);
+    el.appendChild(more);
+    el.addEventListener("click", function () { step(1); });
+
+    ui.body.appendChild(el);
+    if (reset) ui.body.scrollTop = 0;
+    if (typeof onRendered === "function") onRendered();
+  }
+
+  function step(delta) {
+    const n = state.cards.length;
+    if (n < 2) return;
+    state.step = ((state.step + (delta || 1)) % n + n) % n;
+    paint(true);
+  }
+
+  function goTo(i) {
+    if (i === state.step) return;
+    state.step = i;
+    paint(true);
+  }
+
   function renderCards(brand, catId) {
     if (!cardsEl) return;
     const cat = state.categories.filter(function (c) { return c.id === catId; })[0];
-    const list = (brand.cards && brand.cards[catId]) || [];
+    state.catId = catId;
+    state.glyph = cat ? cat.glyph : "car";
+    state.cards = (brand.cards && brand.cards[catId]) || [];
+    state.step = 0;
+    ui = null;
     cardsEl.innerHTML = "";
 
-    if (cat) {
-      const t = document.createElement("p");
-      t.className = "cat-title";
-      t.textContent = cat.label;
-      cardsEl.appendChild(t);
+    if (!state.cards.length) {
+      if (typeof onRendered === "function") onRendered();
+      return;
     }
 
-    /* ekran yüksekliğine göre en fazla 3 kart göster */
-    const limit = window.innerHeight < 720 ? 2 : 3;
-    list.slice(0, limit).forEach(function (card, i) {
-      const el = document.createElement("article");
-      el.className = "card";
-      el.dataset.anchor = catId;      /* kılavuz çizgisi hedefi */
-      el.style.setProperty("--i", String(i));
+    const reader = document.createElement("div");
+    reader.className = "reader";
 
-      /* teknik künye numarası + kılavuz çizgisine bağlanan ok ucu */
-      const idx = document.createElement("span");
-      idx.className = "idx";
-      idx.textContent = "0" + (i + 1);
+    /* --- başlık: kategori + adım sayacı + ince ilerleme çizgisi --- */
+    const head = document.createElement("div");
+    head.className = "reader-head";
+    const title = document.createElement("span");
+    title.className = "cat-title";
+    title.textContent = cat ? cat.label : "";
+    const count = document.createElement("span");
+    count.className = "reader-count";
+    head.appendChild(title);
+    head.appendChild(count);
 
-      const g = document.createElement("span");
-      g.className = "glyph";
-      g.innerHTML = glyph(cat ? cat.glyph : "car");
-      const body = document.createElement("div");
-      const h = document.createElement("h3");
-      h.textContent = card.t;
-      const p = document.createElement("p");
-      p.innerHTML = card.d;
-      body.appendChild(h);
-      body.appendChild(p);
+    const bar = document.createElement("i");
+    bar.className = "reader-bar";
+    const fill = document.createElement("b");
+    bar.appendChild(fill);
 
-      const tick = document.createElement("i");
-      tick.className = "tick";
+    /* --- gövde: aktif konunun kartı --- */
+    const body = document.createElement("div");
+    body.className = "reader-body";
+    body.setAttribute("aria-live", "polite");
 
-      el.appendChild(idx);
-      el.appendChild(g);
-      el.appendChild(body);
-      el.appendChild(tick);
-      cardsEl.appendChild(el);
+    /* --- alt şerit: numaralı bölümler (tıklanınca o konuya atlar) --- */
+    const steps = document.createElement("div");
+    steps.className = "reader-steps";
+    const stepEls = state.cards.map(function (card, i) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "step";
+      b.title = card.t;
+      const n = document.createElement("b");
+      n.textContent = pad2(i + 1);
+      const s = document.createElement("span");
+      s.textContent = card.t;
+      b.appendChild(n);
+      b.appendChild(s);
+      b.addEventListener("click", function () { goTo(i); });
+      steps.appendChild(b);
+      return b;
     });
-    state.cards = list;
-    if (typeof onRendered === "function") onRendered();
+
+    reader.appendChild(head);
+    reader.appendChild(bar);
+    reader.appendChild(body);
+    reader.appendChild(steps);
+    cardsEl.appendChild(reader);
+
+    ui = { count: count, fill: fill, body: body, steps: stepEls };
+    paint(true);
   }
 
   return {
     buildCats: buildCats,
     setActive: setActive,
     renderCards: renderCards,
+    step: step,
     get active() { return state.active; },
+    get steps() { return state.cards.length; },
+    get stepIndex() { return state.step; },
   };
 }

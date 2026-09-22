@@ -4,7 +4,10 @@
    ============================================================ */
 
 export const CFG = {
-  version: "2.3",
+  /* Model/asset sürümü: GLB isteklerine "?v=" olarak eklenir.
+     Model dosyası yenilendiğinde bunu artır — yoksa tarayıcı önbelleği
+     eski GLB'yi göstermeye devam eder. */
+  version: "2.4",
 
   /* Araba ölçüsü: model birimi ne olursa olsun bu uzunluğa ölçeklenir */
   car: {

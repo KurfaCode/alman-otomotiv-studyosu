@@ -1,11 +1,13 @@
 {
   "name": "alman-otomotiv-studyosu",
-  "version": "2.0.0",
+  "version": "2.4.0",
   "private": true,
   "type": "module",
   "description": "Alman otomotiv markaları için 3B sunum platformu (three.js, yerel bağımlılık, build adımı yok)",
   "scripts": {
     "check": "node tools/check-modules.mjs",
-    "serve": "python3 -m http.server 8000"
+    "serve": "node tools/serve.mjs",
+    "start": "node tools/serve.mjs",
+    "serve:py": "python3 -m http.server 8000"
   }
 }

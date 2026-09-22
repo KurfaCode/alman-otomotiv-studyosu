@@ -17,11 +17,17 @@ kartlarını ve kamera odağını değiştirir, alttaki şeritten markalar aras�
 ## Çalıştırma
 
 ```bash
-python3 -m http.server 8000      # veya: npm run serve
-# tarayıcıda: http://localhost:8000/
+npm run serve                    # önbelleksiz sunucu → http://localhost:8000/
+npm run serve -- 8123            # port değiştirmek için
 ```
 
 `file://` ile açmayın: tarayıcı `.glb` dosyasını CORS yüzünden yükleyemez.
+
+**`python3 -m http.server` kullanmayın.** Önbellek başlığı göndermediği için tarayıcı
+eski `.js` modüllerini ve `.glb` modellerini göstermeye devam eder: kodu ya da modeli
+değiştirdiğiniz hâlde sahnede hiçbir şey değişmez ("Audi değişmedi" görüntüsünün
+asıl nedeni buydu). `npm run serve` her yanıta `Cache-Control: no-store` koyar;
+kaydet + yenile yeterlidir.
 
 ## Kontroller
 
@@ -33,6 +39,8 @@ python3 -m http.server 8000      # veya: npm run serve
 | `L` | Farlar (kısa/uzun sırayla) |
 | `S` | Stop lambaları |
 | `B` | Sinyal (sol → sağ → dörtlü → kapalı) |
+| `↑` `↓` | Konu okuyucusunda önceki/sonraki bölüm |
+| Kart / bölüm satırı tıklaması | Sonraki bölüme geç / o bölüme atla |
 | `R` | Otomatik dönüşü duraklat/sürdür |
 | `F` | Tam ekran |
 | `D` | Hata ayıklama katmanı (FPS + kalite kademesi) |
@@ -61,7 +69,8 @@ src/scene/wheels.js       jant dönüşü (geometri merkezine kurulan pivot) + t
 src/scene/effects.js      far / stop / sinyal kontrolcüsü
 src/perf/monitor.js       FPS ölçümü, otomatik kalite kademesi
 src/ui/brandPanel.js      marka künyesi: arma, nesil/gövde/merkez çipleri, 4 teknik satır
-src/ui/featureCards.js    kategori rafı + kategori kartları
+src/ui/featureCards.js    kategori rafı + konu okuyucusu (tek kart + bölüm listesi)
+tools/serve.mjs           önbelleksiz geliştirme sunucusu (npm run serve)
 src/ui/*                  kabuk, yükleme ekranı, sözlük, armalar, kılavuz çizgileri
 vendor/three/**           three.js r160 + GLTFLoader, OrbitControls, Reflector, meshopt
 models/*.glb              marka başına bir model (bkz. models/README.md)
@@ -69,6 +78,26 @@ legacy/                   eski tek dosyalık sürüm (referans)
 ```
 
 İçerik eklemek için kod değil, **veri** düzenlenir: `src/data/brands.js`.
+
+### Konu okuyucusu (sol sütunun alt yarısı)
+
+Üç bilgi kartının üçü birden yazılmaz — sütun boğulmasın diye tek kart gösterilir:
+
+```
+● KONU                            01 / 03      ← kategori + adım sayacı
+▬▬▬▬▬▬▬▬▬▬░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░          ← ilerleme çizgisi
+┌ 25 YILIN VEDASI                          › ┐
+│ 1998'de çıkan TT, üç nesil boyunca …       │   ← aktif bölüm, tam genişlik
+└───────────────────────────────────────┘
+  01 25 YILIN VEDASI                        ← bölüm listesi: tıkla, atla
+  02 DÖRT HALKANIN DOĞUŞU
+  03 AUGUST HORCH
+```
+
+Kartın kendisi de bir sonraki bölüme geçirir (`↑`/`↓` klavyede çalışır). Bölüm
+başlıklarının kırpılmadan okunabilmesi için liste dikeydir; yatay şeritte uzun
+başlıklar "25 YILIN VED…" diye kesiliyordu. Kılavuz çizgisi artık tek karta
+bağlandığı için ekranda da tek çizgi dolaşır.
 
 ### Künye alanları (bilgi paneli)
 
@@ -84,17 +113,23 @@ Sol üstteki plaka tamamen bu alanlardan beslenir; kodda markaya özel tek satı
 | `country` + `iso` | kimlik çipi | Almanya · DE · 1926 |
 | `founded` | kuruluş yılı (kimlik çipinde) | 1926 |
 | `stats` | 2×2 teknik satır (değer + etiket) | 258 PS / 2.0 TURBO + 48 V |
-| `cards` | kategori başına 3 kart | bkz. dosya |
+| `cards` | kategori başına 3 bölüm (başlık + metin) | bkz. dosya |
 | `emblem` | arma çizimi | `src/ui/emblems.js` |
+| `files` | model adayları — **sırayla denenir, ilki kazanır** | `models/c300.glb` |
 
-Her markanın 6 kategoride **en az 3** kartı olmalıdır; `npm run check` ve
+Her markanın 6 kategoride **en az 3** bölümü olmalıdır; `npm run check` ve
 `node tools/test-core.mjs` bunu denetler.
+
+`files` listesinin İLK satırı her zaman `models/<id>.glb` olmalıdır. Adaylar sırayla
+denenir ve ilk başarılı dosya sahneye çıkar; kök dizindeki ham bir model öne geçerse
+panel doğru modeli yazarken sahneye başka bir araç çıkar (Audi'de tam bu olmuştu).
+Test bunu her marka için zorunlu tutar.
 
 ## Doğrulama
 
 ```bash
 npm run check                 # modül sözdizimi + import yolları + içerik kapsaması
-node tools/test-core.mjs      # 70 birim testi: ölçek/yön/jant/kamera/kalite
+node tools/test-core.mjs      # 189 birim testi: ölçek/yön/jant/kamera/kalite/içerik
 ```
 
 Model optimizasyonu ve doğrulaması: `tools/optimize-models.md`.
@@ -107,8 +142,9 @@ Model optimizasyonu ve doğrulaması: `tools/optimize-models.md`.
   (`src/scene/wheels.js`). Düğümün kendi orijini etrafında döndürmek jantı savurur:
   Porsche 992 GT3 R ve Golf R modellerinde tekerlek düğümlerinin orijini arabanın
   ortasındadır. `node tools/test-core.mjs` bu davranışı korur.
-- Audi TT RS modelinde bütün lambalar **tek bir lens materyalinde** toplanmış ve bu
-  materyal gövde boyunca uzandığı için far/stop grubuna yazılmaz; "Far" düğmesi bu
-  modelde lens yerine huzme/hale ve ön kamera ile anlatılır.
+- Audi TT RS modelinde bütün lambalar **tek bir lens materyalinde** toplanmıştır ve o
+  materyal gövde boyunca uzanır. `src/scene/car.js` bu yüzeyi ön/arka diye geometriden
+  ikiye böler (`splitFrontLens`), böylece "Far" ve "Stop" düğmeleri bu modelde de
+  gerçekten çalışır.
 - Modeller `.gitignore`'da: depoyu klonlayan başka bir makinede model dosyalarını elle
   kopyalamak gerekir (`models/README.md`).

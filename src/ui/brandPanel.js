@@ -77,8 +77,15 @@ export function createBrandPanel() {
       els.model.textContent = brand.model || "";
       els.model.title = brand.model || "";
     }
-    if (els.sloganDE) els.sloganDE.textContent = "\u201C" + brand.taglineDE + "\u201D";
-    if (els.sloganTR) els.sloganTR.textContent = brand.taglineTR || "";
+    if (els.sloganDE) {
+      els.sloganDE.textContent = "\u201C" + brand.taglineDE + "\u201D";
+      els.sloganDE.title = brand.taglineDE || "";
+    }
+    if (els.sloganTR) {
+      els.sloganTR.textContent = brand.taglineTR || "";
+      /* tek satıra sığmazsa kırpılır: tam karşılık ipucunda durur */
+      els.sloganTR.title = brand.taglineTR || "";
+    }
     if (els.presenter) els.presenter.textContent = brand.presenter ? "Anlatan: " + brand.presenter : "";
     if (els.presenter) els.presenter.hidden = !brand.presenter;
 

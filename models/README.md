@@ -18,8 +18,14 @@ Her markanın `<marka>-light.glb` sürümü düşük donanımlı cihazlar için 
 
 Dosya yoksa sahne boş kalmaz: marka renginde **konsept maket** gösterilir ve künyede
 "○ KONSEPT MAKET" yazar. Alternatif yollar `src/data/brands.js` içindeki `files` dizisinde
-tanımlıdır (ilk kaynak her zaman `models/` altındaki optimize sürümdür, sonrasında kökteki
-ham dosya adı denenir).
+tanımlıdır: adaylar sırayla denenir ve **ilk başarılı dosya sahneye çıkar**, bu yüzden
+listenin başında her zaman `models/` altındaki optimize sürüm bulunur.
+
+> **Aday sırasına dikkat.** Kökteki ham bir dosya listede öne geçerse sahneye o araç
+> çıkar (panel doğru modeli yazsa bile). Audi'de bir dönem kökteki eski `audi.glb`
+> (RS8 Sport konsepti) listeyi açtığı için panel "TT RS iconic edition" derken sahneye
+> başka bir otomobil çıkıyordu. `node tools/test-core.mjs` artık her markada ilk adayın
+> `models/<id>.glb` olmasını zorunlu tutar.
 
 ## Yeni model eklerken
 
@@ -34,15 +40,20 @@ ham dosya adı denenir).
    **kullanmayın**, yoksa tekerlek düğümleri kaybolur.
 6. İçerik (`src/data/brands.js`) yeni modelle güncellenmeli: `model`, `generation`
    (nesil/kasa + yıl), `segment`, `hq`, `founded`, `stats` ve kategori kartları.
+   `files` dizisinin başına `models/<marka-id>.glb` yaz, ham dosyayı sonrasına ekle.
+7. `src/config.js` içindeki `CFG.version`'ı artır: model istekleri `?v=` etiketiyle gider,
+   bu etiket olmadan tarayıcı eski GLB'yi önbellekten göstermeye devam eder.
 
 ## Yerel çalıştırma
 
 `file://` ile açılırsa tarayıcı GLB yükleyemez (CORS). Klasörde küçük bir sunucu açın:
 
 ```bash
-python3 -m http.server 8000
-# tarayıcıda: http://localhost:8000/
+npm run serve                    # önbelleksiz → http://localhost:8000/
 ```
+
+`python3 -m http.server` **kullanmayın**: önbellek başlığı göndermediği için tarayıcı eski
+modelleri göstermeye devam eder ve yeni koyduğunuz GLB sahneye hiç gelmez.
 
 Kullanışlı adres parametreleri:
 

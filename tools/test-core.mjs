@@ -385,6 +385,16 @@ BRANDS.forEach(function (b) {
   ok(!!b.accent && /^#[0-9a-f]{6}$/i.test(b.accent), b.short + " vurgu rengi geçerli");
   ok((b.files || []).length > 0 && /\.glb$/.test(b.files[0]), b.short + " model yolu tanımlı");
   ok(fs.existsSync(b.files[0]), b.short + " ana model dosyası yerinde", b.files[0]);
+  /* Sahneye çıkan araç her zaman markanın OPTİMİZE dosyası olmalı.
+     Adaylar sırayla denenir ve ilk başarılı dosya gösterilir; eskiden
+     kök dizindeki `audi.glb` (eski RS8 konsepti) listede öne geçtiği
+     için panel TT RS derken sahneye başka bir araç çıkıyordu. */
+  ok(b.files[0] === "models/" + b.id + ".glb",
+    b.short + " ilk aday kendi optimize modeli", b.files[0]);
+  ok((b.lightFiles || [])[0] === "models/" + b.id + "-light.glb",
+    b.short + " hafif sürüm aynı aracın hafif kopyası", (b.lightFiles || [])[0]);
+  ok(fs.existsSync((b.lightFiles || [])[0] || ""),
+    b.short + " hafif model dosyası yerinde", (b.lightFiles || [])[0]);
   /* künye 2×2: dört teknik satır (değer + etiket) */
   ok((b.stats || []).length === 4, b.short + " 4 teknik satır", (b.stats || []).length);
   ok((b.stats || []).every(function (s) { return !!s.v && !!s.l; }), b.short + " teknik satırlar eksiksiz");
@@ -395,10 +405,24 @@ BRANDS.forEach(function (b) {
   const missing = CATEGORIES.filter(function (c) { return !b.cards || !b.cards[c.id] || !b.cards[c.id].length; });
   ok(missing.length === 0, b.short + " tüm kategorilerde kart içeriyor",
     missing.map(function (c) { return c.id; }).join(","));
-  /* her kategoride en az 3 kart: ekran 3 kart gösteriyor */
+  /* her kategoride en az 3 bölüm: okuyucu şeridi 3 adım gösterir */
   const thin = CATEGORIES.filter(function (c) { return !b.cards || !b.cards[c.id] || b.cards[c.id].length < 3; });
-  ok(thin.length === 0, b.short + " kategorilerde en az 3 kart",
+  ok(thin.length === 0, b.short + " kategorilerde en az 3 bölüm",
     thin.map(function (c) { return c.id + "(" + ((b.cards && b.cards[c.id]) || []).length + ")"; }).join(" "));
+
+  /* Okuyucu TEK kart gösterir: metin tek ekrana sığmalı (kaydırma
+     olmadan okunur) ve başlık alt şeritteki kutuya kırpılmadan girmeli. */
+  const long = [];
+  const fat = [];
+  CATEGORIES.forEach(function (c) {
+    (b.cards[c.id] || []).forEach(function (card) {
+      const plain = String(card.d || "").replace(/<[^>]+>/g, "");
+      if (plain.length > 240) long.push(c.id + ":" + plain.length);
+      if (String(card.t || "").length > 34) fat.push(c.id + ":" + String(card.t).length);
+    });
+  });
+  ok(long.length === 0, b.short + " kart metinleri okuyucuya sığıyor", long.join(" "));
+  ok(fat.length === 0, b.short + " kart başlıkları bölüm şeridine sığıyor", fat.join(" "));
 });
 
 /* ================= 7) ışık donanımı (huzme/hale yönü) ================= */

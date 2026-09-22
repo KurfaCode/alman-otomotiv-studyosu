@@ -18,6 +18,14 @@
      country    ülke (panelde "DE" rozeti için ISO kısaltması da var)
      stats      4 satır: değer + etiket (2×2 ızgarada gösterilir)
 
+   MODEL ALANLARI:
+     files      sıraya göre denenir; İLK BAŞARILI dosya sahneye çıkar.
+                Bu yüzden ilk aday her zaman "models/<id>.glb" (optimize,
+                sahnedeki araç) olmalıdır. Aynı aracın başka bir sürümü
+                listeye girecekse models/ yolundan SONRA yazılır.
+     lightFiles hafif sürüm (kadro "Hafif"e düşerse öne alınır):
+                "models/<id>-light.glb" — aynı aracın düşük üçgenli hâli.
+
    İçerikteki her model, models/ klasöründeki GERÇEK GLB ile
    eşleşir; veriler üretici/yarış serisi kaynaklarından alınmıştır
    (bkz. models/README.md). Yıldız (*) opsiyonel donanım ya da
@@ -172,6 +180,9 @@ export const BRANDS = [
     founded: "1909",
     accent: "#e63946",
     accentHex: 0xe63946,
+    /* SIRA ÖNEMLİ: sahnede ilk yüklenen dosya gösterilir. Kök dizindeki
+       eski `audi.glb` (Audi RS8 Sport konsepti) listede öne geçtiği için
+       panel TT RS derken sahneye o araç çıkıyordu; artık hiç aday değil. */
     files: ["models/audi.glb", "2023_audi_tt_rs_iconic_edition.glb"],
     lightFiles: ["models/audi-light.glb"],
     stats: [

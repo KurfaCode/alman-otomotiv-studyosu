@@ -554,6 +554,7 @@ function init() {
     prev: function () { goTo(app.index - 1); },
     goto: goTo,
     action: action,
+    step: function (d) { if (app.cards) app.cards.step(d); },
     toggleDebug: function () { app.shell.setDebug(!app.shell.debug); },
   });
   app.shell.buildDots(BRANDS);

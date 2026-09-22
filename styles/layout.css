@@ -21,6 +21,9 @@
 .head-titles{ min-width:0 }
 #brand-name, #brand-model{ overflow-wrap:anywhere }
 #cards{ flex:1 1 auto; overflow:hidden; justify-content:flex-start }
+/* Konu okuyucusu: başlık + ilerleme + TEK kart + bölüm şeridi.
+   Gövde kendi içinde kayar, sütun taşmaz. */
+#cards .reader{ height:100% }
 
 /* ---------- SAĞ YUVA: kategoriler + araç kontrolleri ---------- */
 #rail{
@@ -74,7 +77,8 @@
   .rail-item kbd{ font-size:.46em; padding:0 3px; right:5px; top:4px }
   #rail{ padding:9px 7px; gap:5px }
   #cats, #tools{ gap:5px }
-  .card{ padding:9px 11px }
+  .card{ padding:11px 28px 11px 12px }
+  .step{ min-height:28px; padding:4px 8px }
 }
 
 /* ---------- çok alçak ekran (600-700px yükseklik, netbook/projeksiyon) ----------
@@ -110,17 +114,28 @@
   .spec .l{ font-size:.5em; padding-left:6px; margin-top:1px }
   .presenter-row{ margin:7px 0 0 }
   .chip{ padding:4px 8px; font-size:.66em }
-  .cards{ gap:8px; margin-top:4px }
-  .card{ padding:9px 26px 9px 11px }
+  .cards{ margin-top:4px }
+  .card{ padding:10px 26px 10px 11px }
+  .card h3{ font-size:.88em }
+  .card p{ font-size:.82em; line-height:1.5 }
   .cat-title{ padding:4px 11px; font-size:.6em }
+  .reader{ gap:5px }
+  .reader-head{ min-height:24px }
+  .step{ min-height:26px; padding:3px 7px }
+  .step span{ font-size:.58em }
 }
 
 /* ---------- dar / dikey ekran ---------- */
 @media (max-width:900px), (max-aspect-ratio:4/5){
+  /* dar/dikey ekranda sütunun tamamı kayar: künye + okuyucu alt alta
+     sığmazsa kullanıcı parmağıyla kaydırır, hiçbir şey kırpılmaz. */
   #left{
     left:10px; right:10px; width:auto; top:10px; bottom:auto;
-    max-height:46vh; gap:8px;
+    max-height:54vh; gap:8px; overflow-y:auto; padding-right:2px;
   }
+  #cards{ overflow:visible }
+  #cards .reader{ height:auto }
+  .reader-body{ overflow:visible }
   #brand-head{ padding:10px 12px }
   .mono{ width:38px; height:38px }
   #brand-head h1{ font-size:1.15em }
@@ -128,9 +143,8 @@
   /* dar/dikey ekranda künye kısalır: kimlik + nesil çipi kalır */
   .meta-row .meta:nth-child(n+3){ display:none }
   .slogan{ margin:8px 0 0; padding-top:7px }
-  #cards{ flex-direction:row; overflow-x:auto; overflow-y:hidden; gap:8px; padding-bottom:4px }
-  #cards .card{ flex:0 0 78%; }
-  #cards .cat-title{ display:none }
+  .step span{ font-size:.58em }
+  .reader-body{ overflow:visible }
   #rail{
     top:auto; bottom:70px; left:10px; right:10px; transform:none;
     max-height:none; gap:5px; padding:8px 10px; border-radius:18px; overflow:visible;

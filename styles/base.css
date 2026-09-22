@@ -219,12 +219,23 @@ body{
   background:linear-gradient(180deg, var(--accent-soft), rgba(255,255,255,.02));
 }
 
+/* Slogan TEK satır: Almanca aslı korunur, Türkçe karşılığı sağda
+   kısaysa sığar, uzunsa üç noktayla kırpılır (tam metin title'da).
+   Böylece künye bir satır kazanır ve kartlara nefes kalır. */
 .slogan{
-  margin:10px 0 0; padding-top:9px; border-top:1px solid var(--line);
-  display:flex; flex-direction:column; gap:1px;
+  margin:9px 0 0; padding-top:8px; border-top:1px solid var(--line);
+  display:flex; align-items:baseline; gap:7px; min-width:0;
 }
-.slogan em{ font-family:Georgia,"Times New Roman",serif; font-style:italic; color:var(--accent-2); font-size:1.02em }
-.slogan span{ color:var(--mut); font-size:.82em }
+.slogan em{
+  flex:0 1 auto; font-family:Georgia,"Times New Roman",serif; font-style:italic;
+  color:var(--accent-2); font-size:.96em; white-space:nowrap; overflow:hidden;
+  text-overflow:ellipsis;
+}
+.slogan span{
+  flex:1 1 auto; min-width:0; color:var(--mut); font-size:.72em;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.slogan span::before{ content:"· "; color:#5b6376 }
 .presenter-row{ margin:9px 0 0; display:flex; flex-wrap:wrap; align-items:center; gap:6px }
 
 /* teknik satırlar: 4 ölçü, 2×2 — her biri sol kenarında ince marka çizgisi */
@@ -242,8 +253,32 @@ body{
 .spec .v{ padding-left:7px; font-weight:800; font-size:1em; color:#fff; letter-spacing:.01em }
 .spec .l{ padding-left:7px; font-size:.55em; color:var(--mut); letter-spacing:.09em; font-weight:700; margin-top:2px }
 
-/* ---------------- özellik kartları (cam panel + teknik künye) ---------------- */
-.cards{ display:flex; flex-direction:column; gap:12px; min-height:0; margin-top:6px }
+/* ---------------- konu okuyucusu (sol sütunun alt yarısı) --------------
+   Üç kartın üçü birden yazılmaz: başlık şeridi hangi bölümde olduğunu
+   söyler, gövdede yalnızca AKTİF bölüm tam genişlikte okunur. */
+.cards{ display:flex; flex-direction:column; justify-content:flex-start; min-height:0; margin-top:6px }
+/* Okuyucu yukarıdan aşağı akar, kalan boşluğu DOLDURMAZ: blok üstte
+   durur, altında sahne nefes alır. (flex:0 1 → içerik kadar yer alır,
+   sığmazsa küçülür ve gövde kendi içinde kayar.) */
+.reader{ flex:0 1 auto; display:flex; flex-direction:column; gap:7px; min-height:0 }
+.reader-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:28px }
+.reader-count{
+  font-size:.58em; font-weight:800; letter-spacing:.16em; white-space:nowrap;
+  color:#c6cede; padding:3px 8px; border-radius:6px;
+  border:1px solid var(--line); background:rgba(255,255,255,.035);
+}
+/* ince ilerleme çizgisi: kaçıncı bölümde olduğumuzu bir bakışta gösterir */
+.reader-bar{ display:block; height:2px; border-radius:2px; overflow:hidden; background:rgba(255,255,255,.09) }
+.reader-bar b{
+  display:block; height:100%; width:0; border-radius:2px;
+  background:linear-gradient(90deg, var(--accent-line), var(--accent));
+  transition:width .22s ease;
+}
+.reader-body{
+  flex:0 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden;
+  padding:1px 1px 0; scrollbar-width:thin;
+}
+
 .card{
   position:relative;
   background:
@@ -252,8 +287,8 @@ body{
   border:1px solid rgba(255,255,255,.10);
   border-radius:14px;
   box-shadow:0 22px 46px -24px rgba(0,0,0,.95), inset 0 1px 0 rgba(255,255,255,.06);
-  padding:13px 30px 12px 13px; display:flex; gap:11px; align-items:flex-start;
-  animation:cardIn .28s ease both;
+  padding:13px 30px 13px 14px; display:flex; gap:11px; align-items:flex-start;
+  animation:cardIn .24s ease both; cursor:pointer;
 }
 /* sol kenarda ışık şeridi + sağ üstte köşe braketi: "ölçüm kartı" dili */
 .card::before{
@@ -265,16 +300,13 @@ body{
   border-right:2px solid var(--accent); border-top:2px solid var(--accent);
   border-radius:0 14px 0 0; opacity:.55;
 }
+.card:hover{ border-color:var(--line-2); background:
+    radial-gradient(150% 160% at 0% 0%, rgba(62,78,110,.40) 0%, rgba(18,24,38,.24) 46%, rgba(8,11,18,.14) 100%),
+    linear-gradient(180deg, rgba(15,21,33,.62), rgba(7,10,17,.44)); }
 @keyframes cardIn{ from{ opacity:0; transform:translateX(-10px) } to{ opacity:1; transform:none } }
 html[data-perf="2"] .card{ animation:none }
-.card .idx{
-  position:absolute; left:11px; top:-9px; padding:1px 6px;
-  font-size:.58em; font-weight:800; letter-spacing:.14em;
-  color:var(--accent-2); background:linear-gradient(180deg, #151b29, #0a0e16);
-  border:1px solid var(--accent-line); border-radius:6px;
-}
 .card .glyph{
-  flex:0 0 auto; width:32px; height:32px; border-radius:10px; margin-top:2px;
+  flex:0 0 auto; width:32px; height:32px; border-radius:10px; margin-top:1px;
   display:flex; align-items:center; justify-content:center;
   color:var(--accent-2);
   background:linear-gradient(180deg, var(--accent-soft), rgba(255,255,255,.02));
@@ -282,27 +314,63 @@ html[data-perf="2"] .card{ animation:none }
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
 }
 .card .glyph svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round }
+.card .card-body{ min-width:0 }
 .card h3{
-  margin:0 0 4px; font-size:.85em; font-weight:800; letter-spacing:.07em; color:#fff;
-  text-transform:uppercase;
+  margin:0 0 5px; font-size:.92em; font-weight:800; letter-spacing:.06em; color:#fff;
+  text-transform:uppercase; line-height:1.25;
 }
-.card p{ margin:0; font-size:.83em; color:var(--mut); line-height:1.5 }
+.card p{ margin:0; font-size:.86em; color:#98a2b6; line-height:1.55 }
 .card p b{ color:#e6ebf7; font-weight:600 }
-/* karttan arabaya geçiş noktası: kılavuz çizgisi bu oktan devam eder */
-.card .tick{
-  position:absolute; right:8px; top:50%; width:8px; height:8px; margin-top:-4px;
-  border-top:1.6px solid var(--accent); border-right:1.6px solid var(--accent);
-  transform:rotate(45deg); opacity:.9;
+/* "dokun, sonraki konu": sağ kenardaki ince ok */
+.card .more{
+  position:absolute; right:9px; top:50%; width:16px; height:16px; margin-top:-8px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:1em; font-weight:800; line-height:1; color:var(--accent-2);
+  border:1px solid var(--accent-line); border-radius:50%; opacity:.55;
+  transition:opacity .15s ease, transform .15s ease;
 }
+.card:hover .more{ opacity:.95; transform:translateX(1px) }
+html[data-perf="2"] .card .more{ transition:none }
+
+/* Bölüm listesi (içindekiler): numara + başlık, tıklanınca o konuya
+   atlar. Dikey durur çünkü başlıklar kırpılmadan okunur — yatay şeritte
+   "25 YILIN VED..." gibi kesiliyordu. */
+.reader-steps{ display:flex; flex-direction:column; gap:3px }
+.step{
+  position:relative; flex:0 0 auto; min-height:32px;
+  display:flex; align-items:center; gap:8px; text-align:left;
+  font:inherit; color:#98a2b6; cursor:pointer; overflow:hidden;
+  padding:5px 9px 5px 10px; border-radius:9px; border:1px solid transparent;
+  background:linear-gradient(180deg, rgba(18,24,37,.52), rgba(9,12,20,.44));
+  transition:background .15s ease, color .15s ease, border-color .15s ease;
+}
+.step::before{
+  content:""; position:absolute; left:0; top:6px; bottom:6px; width:2px;
+  border-radius:2px; background:var(--accent); opacity:0; transition:opacity .15s ease;
+}
+.step b{ flex:0 0 auto; font-size:.55em; font-weight:800; letter-spacing:.1em; color:#7f8aa1 }
+.step span{
+  flex:1 1 auto; min-width:0; font-size:.62em; font-weight:700; letter-spacing:.04em;
+  text-transform:uppercase; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.step:hover{ background:linear-gradient(180deg, rgba(38,47,68,.72), rgba(14,18,28,.62)); color:#fff }
+.step:active{ transform:scale(.99) }
+.step:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+.step.on{
+  color:var(--accent-2); border-color:var(--accent-line); background:var(--accent-soft);
+}
+.step.on::before{ opacity:.9 }
+.step.on b{ color:var(--accent-2) }
+
 .cat-title{
-  display:inline-flex; align-items:center; gap:8px; width:fit-content;
-  margin:0 0 2px; padding:5px 13px; border-radius:999px;
+  display:inline-flex; align-items:center; gap:8px; width:fit-content; min-width:0;
+  margin:0; padding:5px 13px; border-radius:999px;
   border:1px solid var(--line-2); background:rgba(255,255,255,.035);
   font-size:.66em; letter-spacing:.22em; color:#cbd4e6;
   text-transform:uppercase; font-weight:800;
 }
 .cat-title::before{
-  content:""; width:6px; height:6px; border-radius:50%;
+  content:""; flex:0 0 auto; width:6px; height:6px; border-radius:50%;
   background:var(--accent); box-shadow:0 0 8px var(--accent);
 }
 

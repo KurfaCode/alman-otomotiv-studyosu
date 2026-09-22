@@ -109,6 +109,10 @@ export function createShell(handlers) {
     else if (k === "ArrowLeft") { e.preventDefault(); handlers.prev(); }
     else if (k === " " || k === "PageDown") { e.preventDefault(); handlers.next(); }
     else if (k === "PageUp") { e.preventDefault(); handlers.prev(); }
+    /* konu okuyucusunda adım adım ilerle (↑ geri, ↓ ileri) */
+    else if (k === "ArrowDown" || k === "ArrowUp") {
+      if (handlers.step) { e.preventDefault(); handlers.step(k === "ArrowDown" ? 1 : -1); }
+    }
     else if (k === "f" || k === "F") { toggleFullscreen(); }
     else if (k === "l" || k === "L") { handlers.action("low"); }
     else if (k === "s" || k === "S") { handlers.action("brake"); }
