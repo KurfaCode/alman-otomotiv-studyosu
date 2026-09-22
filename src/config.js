@@ -4,7 +4,7 @@
    ============================================================ */
 
 export const CFG = {
-  version: "2.2",
+  version: "2.3",
 
   /* Araba ölçüsü: model birimi ne olursa olsun bu uzunluğa ölçeklenir */
   car: {

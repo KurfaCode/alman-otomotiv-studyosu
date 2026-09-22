@@ -27,10 +27,13 @@ const KIND_RULES = [
   ["drl",      /drl_|drl$|tagfahr/],
   ["glow",     /lights_global|lights_29|lights_13|vehiclelights/],
   ["glass",    /glass|scheibe|windshield|fenster/],
-  ["interior", /leather|leder|gauges|screen|burmester|airbag|key_|simbs|symbols|speakers|fabric|vinyl|plast|_int\b|w206_59|blue2?$/],
+  /* "interior" adı geçen materyaller (Sketchfab ihracı: InteriorA_Material1)
+     iç mekân grubuna girer; karbon parçalar ise ayrı bir sınıftır. */
+  ["interior", /leather|leder|gauges|screen|burmester|airbag|key_|simbs|symbols|speakers|fabric|vinyl|plast|interior|_int\b|w206_59|blue2?$/],
+  ["trim",     /carbon|kevlar/],
   ["tyre",     /^tyre|^tire|reifen|side wall/],
   ["rim",      /^rim$|^steel$|jante|esr_cs1|wheel brake disk|clipper|logo|badge|lettering|chrome|mirror|metallic|trim|grille|grill/],
-  ["paint",    /w206_paint|w206_color|etk800|karosserie|car ?paint|autolack|^paint/],
+  ["paint",    /w206_paint|w206_color|etk800|karosserie|car ?paint|autolack|^paint|coloured/],
 ];
 
 /* İsimsiz modeller (Sketchfab/FBX ihracı) materyallerini "TEX.014"
@@ -575,6 +578,11 @@ export function prepareCar(scene3d) {
         if ("metalness" in m) m.metalness = 0.0;
       } else if (kind === "interior") {
         m.envMapIntensity = 0.55;
+      } else if (kind === "trim") {
+        /* karbon/kevlar: mat siyah değil, yarı parlak bir derinlik */
+        m.envMapIntensity = 1.1;
+        if ("metalness" in m) m.metalness = Math.min(Math.max(m.metalness, 0.30), 0.85);
+        if ("roughness" in m) m.roughness = Math.min(Math.max(m.roughness, 0.12), 0.52);
       } else if (parts.lights[kind]) {
         m.emissive = m.emissive || new THREE.Color(0x000000);
         m.userData.baseEmissive = m.emissive.clone();

@@ -203,7 +203,11 @@ function loadModel(brand, instant) {
      sürüm tercih edilir. Varsayılan TAM detaydır: model 1,03M üçgenin
      tamamını gösterir, kalite kademesi yalnızca çözünürlük/ayna kısar. */
   const wantLight = app.preferLight || app.usingLight;
-  const files = wantLight && brand.lightFiles ? brand.lightFiles.concat(brand.files) : brand.files;
+  /* Sürüm etiketi şart: model dosyası değiştiğinde tarayıcı önbelleği
+     eski GLB'yi göstermeye devam ediyordu ("Audi değişmemiş" görüntüsü).
+     Yeni model koyduğunuzda CFG.version'ı artırın. */
+  const files = (wantLight && brand.lightFiles ? brand.lightFiles.concat(brand.files) : brand.files)
+    .map(function (f) { return f + (f.indexOf("?") >= 0 ? "&" : "?") + "v=" + CFG.version; });
 
   let lastPct = -1;
   loadFirst(app.loader, files, function (xhr) {
