@@ -1,0 +1,157 @@
+/* ============================================================
+   Yerleşim: tek katman, absolute konumlama.
+   Akıllı tahta hedefi: 1366×768 ve üstü. Dikey/dar ekranlarda
+   sütunlar tam genişliğe iner, kartlar kısalır.
+   ============================================================ */
+
+#ui{ position:fixed; inset:0; z-index:5; pointer-events:none }
+
+/* ---------- SOL: marka künyesi + özellik kartları ---------- */
+#left{
+  position:absolute;
+  left:clamp(14px, 1.5vw, 32px);
+  top:clamp(14px, 2vh, 26px);
+  bottom:clamp(86px, 12vh, 118px);
+  width:clamp(292px, 24vw, 404px);
+  display:flex; flex-direction:column; gap:var(--gap); min-height:0;
+  pointer-events:auto;
+}
+#brand-head{ padding:13px 15px 13px }
+.head-top{ display:flex; align-items:center; gap:11px }
+.head-titles{ min-width:0 }
+#brand-name, #brand-model{ overflow-wrap:anywhere }
+#cards{ flex:1 1 auto; overflow:hidden; justify-content:flex-start }
+
+/* ---------- SAĞ YUVA: kategoriler + araç kontrolleri ---------- */
+#rail{
+  position:absolute; right:clamp(12px, 1.2vw, 26px); top:50%; transform:translateY(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:7px;
+  pointer-events:auto; max-height:calc(100vh - 24px); overflow:hidden;
+  padding:11px 9px; border-radius:22px; border:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(11,15,24,.80), rgba(6,9,15,.66));
+  box-shadow:var(--shadow);
+}
+#cats, #tools{ display:flex; flex-direction:column; align-items:center; gap:6px }
+
+/* ---------- ALT ŞERİT İÇİ AYRAÇ ---------- */
+.nav-sep{ width:1px; height:26px; background:var(--line-2); margin:0 2px }
+
+/* ---------- ALT: marka gezinmesi ---------- */
+#nav{
+  position:absolute; left:50%; bottom:clamp(12px, 1.8vh, 20px); transform:translateX(-50%);
+  display:flex; align-items:center; gap:10px;
+  padding:7px 10px; border-radius:999px;
+  max-width:calc(100vw - 32px);
+  pointer-events:auto;
+}
+
+/* ---------- sözlük ---------- */
+.dict{
+  position:absolute; left:clamp(14px, 1.5vw, 32px); bottom:clamp(86px, 12vh, 118px);
+  width:min(340px, 82vw); padding:12px 14px; pointer-events:auto; z-index:7;
+}
+.dict[hidden]{ display:none }
+
+/* ---------- büyük ekran / tahta ---------- */
+@media (min-width:1900px){
+  :root{ --fs:17px }
+  #left{ width:clamp(340px, 21vw, 470px) }
+}
+
+/* ---------- görece alçak ekran (768p tahtalar) ---------- */
+@media (max-height:820px){
+  #left{ top:12px; bottom:78px }
+  .meta{ font-size:.55em; padding:2px 7px }
+  .meta-row{ gap:4px; margin:8px 0 0 }
+  .slogan{ margin:8px 0 0; padding-top:7px }
+  .spec{ padding:6px 8px 5px }
+  #brand-head{ padding:11px 13px 10px }
+  .specs{ gap:5px; margin:8px 0 0 }
+  #nav{ bottom:10px; padding:6px 9px }
+  .rail-item{ width:74px; padding:6px 4px 5px; border-radius:11px }
+  .rail-item svg{ width:20px; height:20px }
+  .rail-item span{ font-size:.6em }
+  .rail-item kbd{ font-size:.46em; padding:0 3px; right:5px; top:4px }
+  #rail{ padding:9px 7px; gap:5px }
+  #cats, #tools{ gap:5px }
+  .card{ padding:9px 11px }
+}
+
+/* ---------- çok alçak ekran (600-700px yükseklik, netbook/projeksiyon) ----------
+   Künye kısalır ki alttaki üç kart tamamen görünsün. */
+@media (max-height:700px) and (min-width:901px){
+  #brand-head{ padding:9px 11px 8px }
+  #brand-head h1{ font-size:1.1em }
+  .mono{ width:38px; height:38px; border-radius:11px }
+  #brand-model{ font-size:.7em; margin-top:3px }
+  .meta-row{ gap:4px; margin:7px 0 0 }
+  .meta-row .meta:nth-child(n+3){ display:none }
+  .meta{ font-size:.53em; padding:2px 6px }
+  /* çok alçak ekranda 10 düğme tek sütuna zor sığar: hepsi bir tık küçülür,
+     böylece hiçbir kontrol gizlenmez */
+  #rail{ padding:6px; gap:3px; border-radius:16px }
+  #cats, #tools{ gap:3px }
+  .rail-group{ gap:3px }
+  .rail-item{ width:62px; padding:4px 3px 3px; gap:3px; border-radius:10px }
+  .rail-item svg{ width:17px; height:17px }
+  .rail-item span{ font-size:.54em }
+  .rail-item kbd{ display:none }
+  .rail-item .led{ width:5px; height:5px }
+  .rail-item::before{ top:5px; bottom:5px }
+  .rail-label{ font-size:.46em; padding:0 }
+  .rail-sep{ margin:0 }
+  /* slogan tek satıra iner: Türkçe karşılık gizlenir, yer karta kalır */
+  .slogan{ margin:7px 0 0; padding-top:6px }
+  .slogan em{ font-size:.9em }
+  .slogan span{ display:none }
+  .specs{ gap:5px; margin:7px 0 0 }
+  .spec{ padding:5px 7px 4px }
+  .spec .v{ font-size:.86em; padding-left:6px }
+  .spec .l{ font-size:.5em; padding-left:6px; margin-top:1px }
+  .presenter-row{ margin:7px 0 0 }
+  .chip{ padding:4px 8px; font-size:.66em }
+  .cards{ gap:8px; margin-top:4px }
+  .card{ padding:9px 26px 9px 11px }
+  .cat-title{ padding:4px 11px; font-size:.6em }
+}
+
+/* ---------- dar / dikey ekran ---------- */
+@media (max-width:900px), (max-aspect-ratio:4/5){
+  #left{
+    left:10px; right:10px; width:auto; top:10px; bottom:auto;
+    max-height:46vh; gap:8px;
+  }
+  #brand-head{ padding:10px 12px }
+  .mono{ width:38px; height:38px }
+  #brand-head h1{ font-size:1.15em }
+  .specs{ margin-top:8px; grid-template-columns:repeat(2,1fr) }
+  /* dar/dikey ekranda künye kısalır: kimlik + nesil çipi kalır */
+  .meta-row .meta:nth-child(n+3){ display:none }
+  .slogan{ margin:8px 0 0; padding-top:7px }
+  #cards{ flex-direction:row; overflow-x:auto; overflow-y:hidden; gap:8px; padding-bottom:4px }
+  #cards .card{ flex:0 0 78%; }
+  #cards .cat-title{ display:none }
+  #rail{
+    top:auto; bottom:70px; left:10px; right:10px; transform:none;
+    max-height:none; gap:5px; padding:8px 10px; border-radius:18px; overflow:visible;
+  }
+  .rail-group{ flex-direction:row; width:auto; gap:5px }
+  .rail-label{ display:none }
+  #cats, #tools{ flex-direction:row; justify-content:center; flex-wrap:wrap; gap:5px }
+  .rail-sep{ width:100%; height:1px; margin:1px 0 }
+  .rail-item{ width:60px; padding:5px 3px 4px }
+  .rail-item svg{ width:18px; height:18px }
+  .rail-item span{ font-size:.58em }
+  .rail-item kbd{ display:none }
+  .rail-item::before{ top:5px; bottom:5px }
+  .dict{ left:10px; right:10px; bottom:auto; top:52vh; width:auto }
+  #nav{ bottom:8px; gap:6px; flex-wrap:wrap; justify-content:center }
+  #fps{ display:none }
+}
+
+/* dokunmatikte hover takılmasın */
+@media (hover:none){
+  .btn:hover, .rail-item:hover{ background:rgba(255,255,255,.045) }
+  .rail-item:hover{ color:var(--mut) }
+  .rail-item.on:hover{ color:var(--accent-2) }
+}

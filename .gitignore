@@ -1,3 +1,13 @@
-mercedes.glb
+# Ham (Blender/Sketchfab) modeller: onlarca MB, repoda tutulmaz.
+# Optimize sürümler models/ altında üretilir (tools/optimize-models.md).
+*.glb
+!models/
+models/*.glb
+models/_original/
+
+node_modules/
 *.log
 .DS_Store
+
+# Araç (Freebuff) çalışma alanı bilgisi
+.freebuff/

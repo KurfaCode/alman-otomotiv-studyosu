@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Alman Otomotiv Stüdyosu</title>
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/layout.css" />
+</head>
+<body>
+
+<div id="stage"></div>
+<div id="vignette" class="deco"></div>
+<div id="accent-wash" class="deco"></div>
+
+<div id="ui">
+
+  <div id="left">
+    <header id="brand-head" class="panel">
+      <span id="brand-plate" class="plate-no" aria-hidden="true">01</span>
+      <div class="head-top">
+        <span id="brand-mono" class="mono">MB</span>
+        <div class="head-titles">
+          <h1 id="brand-name">—</h1>
+          <p id="brand-model">—</p>
+        </div>
+      </div>
+      <!-- nesil · gövde · merkez · kuruluş: marka künyesi -->
+      <div id="brand-meta" class="meta-row"></div>
+      <p class="slogan">
+        <em id="slogan-de">—</em>
+        <span id="slogan-tr">—</span>
+      </p>
+      <div id="specs" class="specs"></div>
+      <p class="presenter-row"><span id="brand-presenter" class="chip presenter">Anlatan: —</span></p>
+    </header>
+    <section id="cards" class="cards" aria-live="polite"></section>
+  </div>
+
+  <!-- sağ kontrol yuvası: özellik kategorileri + canlı araç kontrolleri -->
+  <div id="rail">
+    <div class="rail-group">
+      <span class="rail-label">Kategori</span>
+      <nav id="cats" aria-label="Özellik kategorileri"></nav>
+    </div>
+    <span class="rail-sep" aria-hidden="true"></span>
+    <div class="rail-group">
+      <span class="rail-label">Araç</span>
+      <div id="tools" aria-label="Araç kontrolleri"></div>
+    </div>
+  </div>
+
+  <footer id="nav" class="panel">
+    <button id="btn-prev" class="btn icon" type="button" aria-label="Önceki marka" title="Önceki marka (←)">‹</button>
+    <div id="dots" class="dots"></div>
+    <span id="counter" class="counter">1 / 6</span>
+    <button id="btn-next" class="btn icon" type="button" aria-label="Sonraki marka" title="Sonraki marka (→)">›</button>
+    <span class="nav-sep" aria-hidden="true"></span>
+    <button id="btn-dict" class="btn tiny ghost" type="button" title="Almanca terimler">Sözlük</button>
+    <button id="btn-full" class="btn tiny ghost" type="button" title="Tam ekran (F)">Tam Ekran</button>
+  </footer>
+
+  <aside id="dict" class="panel dict" hidden aria-label="Otomotiv Almancası sözlüğü">
+    <h4>OTOMOTİV ALMANCASI <button id="dict-close" class="btn tiny ghost" type="button" aria-label="Kapat">✕</button></h4>
+    <dl id="dict-list"></dl>
+  </aside>
+
+</div>
+
+<div id="loader">
+  <div class="loader-inner">
+    <div class="mono big">AO</div>
+    <h2>ALMAN OTOMOTİV STÜDYOSU</h2>
+    <div class="bar"><i id="load-bar"></i></div>
+    <p id="load-txt">Sahne hazırlanıyor…</p>
+    <small id="build-tag">BUILD</small>
+  </div>
+</div>
+
+<div id="fatal" hidden>
+  <div class="panel fatal-inner">
+    <h2 id="fatal-title">WebGL başlatılamadı</h2>
+    <p id="fatal-text">Bu tarayıcı 3B sahneyi çizemiyor.</p>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+<div id="fps" hidden>— FPS</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
