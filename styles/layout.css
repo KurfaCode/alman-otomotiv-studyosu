@@ -198,26 +198,94 @@
 /* video oynatılamayan cihazda birincil düğme gizlenir: tek yol kalır */
 .gate-actions.degraded .btn.primary{ display:none }
 
-.gate-pin-box{
-  margin-top:16px; padding:16px 20px;
-  background:rgba(8,12,20,.85); border:1px solid rgba(212,175,55,.35);
-  border-radius:var(--r-md, 10px); text-align:center;
+/* ============================================================
+   İntro Güvenlik PIN Modalı (Kurfa Köprü Keypad Tasarımı)
+   ============================================================ */
+.intro-pin-backdrop {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(3, 5, 10, 0.88);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
 }
-.gate-pin-box[hidden]{ display:none }
-.gate-pin-header{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:.92em; color:#f1f5f9 }
-.gate-pin-icon{ font-size:1.15em; color:var(--accent) }
-.gate-pin-desc{ margin:6px 0 12px; font-size:.78em; color:var(--mut) }
-.gate-pin-inputs{ display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap }
-.gate-pin-inputs input{
-  padding:10px 14px; border-radius:8px;
-  background:rgba(0,0,0,.45); border:1px solid var(--line);
-  color:#fff; font-family:inherit; font-size:1em; letter-spacing:.15em;
-  text-align:center; width:140px; outline:none; transition:border-color .2s;
+.intro-pin-backdrop[hidden] { display: none !important; }
+
+.intro-pin-card {
+  position: relative; width: min(340px, 92vw); padding: 26px 22px 22px;
+  background: rgba(10, 14, 22, 0.96); border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: var(--r-lg, 16px); box-shadow: 0 24px 70px rgba(0,0,0,0.9), 0 0 30px rgba(212, 175, 55, 0.12);
+  text-align: center;
 }
-.gate-pin-inputs input:focus{ border-color:var(--accent); box-shadow:0 0 0 2px rgba(212,175,55,.2) }
-.gate-pin-inputs .btn{ min-height:42px; padding:0 18px }
-.gate-pin-err{ margin-top:10px; font-size:.76em; color:#ef4444; font-weight:600 }
-.gate-pin-err[hidden]{ display:none }
+
+.pin-modal-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8; font-size: 0.95rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.pin-modal-close:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+
+.intro-pin-icon-wrap {
+  width: 50px; height: 50px; margin: 0 auto 10px; border-radius: 14px;
+  background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.35);
+  color: var(--accent, #fbbf24); display: flex; align-items: center; justify-content: center;
+}
+
+.intro-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  background: rgba(212, 175, 55, 0.12); border: 1px solid rgba(212, 175, 55, 0.28);
+  color: var(--accent, #fbbf24); font-size: 0.65rem; letter-spacing: 0.14em;
+  font-weight: 700; text-transform: uppercase; margin-bottom: 8px;
+}
+
+.intro-pin-header h3 { font-size: 1.25rem; font-weight: 700; margin: 4px 0 6px; color: #f8fafc; }
+.intro-pin-header p { color: var(--mut, #94a3b8); font-size: 0.8rem; line-height: 1.45; margin: 0 0 16px; }
+
+.intro-pin-display {
+  display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 20px;
+}
+.intro-pin-display .pin-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.25); background: transparent;
+  transition: all 0.2s ease;
+}
+.intro-pin-display .pin-dot.filled {
+  background: var(--accent, #fbbf24); border-color: var(--accent, #fbbf24);
+  transform: scale(1.15); box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+}
+
+.intro-pin-keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 270px; margin: 0 auto;
+}
+.intro-pin-key {
+  height: 48px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04); color: #f8fafc;
+  font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; touch-action: manipulation; user-select: none; transition: all 0.15s ease;
+}
+.intro-pin-key:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.2); }
+.intro-pin-key:active { transform: scale(0.93); background: rgba(212, 175, 55, 0.2); }
+
+.intro-pin-fn { font-size: 1rem; color: #94a3b8; }
+.intro-pin-submit {
+  background: rgba(212, 175, 55, 0.18); color: var(--accent, #fbbf24);
+  border-color: rgba(212, 175, 55, 0.35);
+}
+.intro-pin-submit:hover { background: rgba(212, 175, 55, 0.28); }
+
+.intro-auth-status {
+  min-height: 22px; margin-top: 14px; font-size: 0.78rem; color: #94a3b8;
+}
+.intro-auth-status.error { color: #f87171; font-weight: 600; }
+.intro-auth-status.success { color: #4ade80; font-weight: 600; }
+
+@keyframes authShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
 
 #intro-film{
   position:fixed; inset:0; z-index:55; background:#03050a;

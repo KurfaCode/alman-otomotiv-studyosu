@@ -83,19 +83,56 @@
       <button id="gate-start" class="btn" type="button">Sunumla Devam Et <b aria-hidden="true">›</b></button>
     </div>
 
-    <!-- İntro PIN Doğrulama -->
-    <div id="gate-pin-box" class="gate-pin-box" hidden>
-      <div class="gate-pin-header">
-        <span class="gate-pin-icon">🔒</span>
-        <strong>İntro Güvenlik Girişi</strong>
+    <!-- İntro PIN Doğrulama Modalı (Kurfa Köprü Keypad Tasarımı) -->
+    <div id="intro-pin-modal" class="intro-pin-backdrop" hidden>
+      <div class="intro-pin-card panel">
+        <button type="button" class="pin-modal-close" id="gate-pin-close" aria-label="Kapat">✕</button>
+        <div class="intro-pin-header">
+          <div class="intro-pin-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+              <line x1="7" y1="2" x2="7" y2="22"/>
+              <line x1="17" y1="2" x2="17" y2="22"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <line x1="2" y1="7" x2="7" y2="7"/>
+              <line x1="2" y1="17" x2="7" y2="17"/>
+              <line x1="17" y1="17" x2="22" y2="17"/>
+              <line x1="17" y1="7" x2="22" y2="7"/>
+            </svg>
+          </div>
+          <span class="intro-badge">ERİŞİM DOĞRULAMA</span>
+          <h3>İntro Güvenlik Girişi</h3>
+          <p>Tanıtım filmini izlemek için 4 haneli erişim kodunu girin.</p>
+        </div>
+
+        <div class="intro-pin-display" id="gate-pin-display" aria-label="Girilen PIN">
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+        </div>
+
+        <input type="password" id="gate-pin-hidden-input" class="pin-hidden-input" inputmode="numeric" maxlength="4" pattern="[0-9]*" autocomplete="off" aria-label="PIN Kodu Girişi" />
+
+        <div class="intro-pin-keypad" id="gate-pin-keypad">
+          <button type="button" class="intro-pin-key" data-key="1">1</button>
+          <button type="button" class="intro-pin-key" data-key="2">2</button>
+          <button type="button" class="intro-pin-key" data-key="3">3</button>
+          <button type="button" class="intro-pin-key" data-key="4">4</button>
+          <button type="button" class="intro-pin-key" data-key="5">5</button>
+          <button type="button" class="intro-pin-key" data-key="6">6</button>
+          <button type="button" class="intro-pin-key" data-key="7">7</button>
+          <button type="button" class="intro-pin-key" data-key="8">8</button>
+          <button type="button" class="intro-pin-key" data-key="9">9</button>
+          <button type="button" class="intro-pin-key intro-pin-fn" data-key="clear" title="Temizle">C</button>
+          <button type="button" class="intro-pin-key" data-key="0">0</button>
+          <button type="button" class="intro-pin-key intro-pin-fn intro-pin-submit" data-key="enter" title="Giriş">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+
+        <div class="intro-auth-status" id="gate-pin-error" aria-live="polite">4 haneli PIN kodunuzu girin.</div>
       </div>
-      <p class="gate-pin-desc">Tanıtım filmini izlemek için yetkili PIN kodunu giriniz.</p>
-      <div class="gate-pin-inputs">
-        <input type="password" id="gate-pin-input" inputmode="numeric" placeholder="PIN" maxlength="12" autocomplete="off" />
-        <button id="gate-pin-submit" class="btn primary" type="button">Başlat</button>
-        <button id="gate-pin-cancel" class="btn tiny ghost" type="button">İptal</button>
-      </div>
-      <p id="gate-pin-error" class="gate-pin-err" hidden></p>
     </div>
 
     <p class="gate-hint">Kısayollar: <kbd>←</kbd> <kbd>→</kbd> marka · <kbd>R</kbd> dönüş · <kbd>L</kbd> far · <kbd>F</kbd> tam ekran</p>
