@@ -29,6 +29,15 @@ statik site olarak yayınlanır (yayın dallı `main`, kök dizin).
 - 144 MB'lık ham video kaydı repoda durmaz (GitHub tek dosya sınırı 100 MB);
   `media/intro.mp4` sıkıştırılmış sürümdür.
 
+Tanıtım filmini yeniden sıkıştırmak için:
+
+```bash
+npm i --no-save ffmpeg-static
+node_modules/ffmpeg-static/ffmpeg -i ham-kayit.mp4 \
+  -c:v libx264 -preset slow -crf 26 -pix_fmt yuv420p -movflags +faststart \
+  -c:a aac -b:a 128k media/intro.mp4
+```
+
 ## Çalıştırma (yerel)
 
 ```bash
